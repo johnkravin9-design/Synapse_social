@@ -1,47 +1,69 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from flask import Flask, request, jsonify, render_template, send_from_directory
+
+from flask import Flask, request, jsonify, render_template, send_from_directory, session
 from werkzeug.utils import secure_filename
-from flask import Flask, request, jsonify, session, render_template, redirect, url_for
-from flask_migrate import migrate
+from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 import jwt
 import secrets
 import random
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-import os
 import base64
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(32)
+# Make Google Auth optional for deployment
+try:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as google_requests
+    GOOGLE_AUTH_AVAILABLE = True
+except ImportError:
+    GOOGLE_AUTH_AVAILABLE = False
+    print("⚠️  Google Auth not available - Google login disabled")
+    
+    # Create mock classes
+    class MockIdToken:
+        def verify_oauth2_token(self, token, request, audience=None):
+            return None
+    id_token = MockIdToken()
+    google_requests = None
 
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+
+# Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///synapse.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Email Configuration
+# Email Configuration (optional)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'johnkravin9@gmail.com'
-app.config['MAIL_PASSWORD'] = 'bqvhexpqbnztnmww'
-app.config['MAIL_DEFAULT_SENDER'] = 'johnkravin9@gmail.com'
-#o
-# Google OAuth Configuration
-app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', 'your-google-client-id')
+app.config['MAIL_USERNAME'] = os.environ.get('johnkravin9@gmail.com', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('bqvhexpqbnztnmww', '')
 
-CORS(app, supports_credentials=True)
+# Initialize extensions
 db = SQLAlchemy(app)
-mail = Mail(app)
+migrate = Migrate(app, db)
+CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Initialize Mail (with error handling)
+try:
+    mail = Mail(app)
+    MAIL_AVAILABLE = True
+except Exception as e:
+    MAIL_AVAILABLE = False
+    print(f"⚠️  Email not configured: {e}")
+    mail = None
+
+#
+#
 # ==================== DATABASE MODELS ====================
 
 class User(db.Model):
@@ -3242,6 +3264,30 @@ def get_mood_insights(current_user):
     return jsonify(insights)
 
 # ==================== WEBSOCKET EVENTS ====================
+
+@app.route('/api/auth/google', methods=['POST'])
+def google_auth():
+    if not GOOGLE_AUTH_AVAILABLE:
+        return jsonify({
+            'error': 'Google authentication temporarily disabled for deployment',
+            'message': 'Use regular email registration for now'
+        }), 501
+    
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        
+        # Verify the token
+        idinfo = id_token.verify_oauth2_token(
+            token, google_requests.Request(), 
+            'your-google-client-id'  # Replace with your actual client ID
+        )
+        
+        # Rest of your Google auth logic...
+        return jsonify({'message': 'Google auth successful'})
+        
+    except ValueError:
+        return jsonify({'error': 'Invalid token'}), 400
 
 #@socketio.on('connect')
 ##def handle_connect():
