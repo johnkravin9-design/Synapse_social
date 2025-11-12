@@ -4407,15 +4407,9 @@ if __name__ == '__main__':
     print("\n🔧 API Endpoints: /api/*")
     print("="*50 + "\n")
 
-    # Use environment port and handle production/development
-    port = int(os.environ.get('PORT', 5000))
-    is_production = os.environ.get('FLASK_ENV') == 'production'
-    
-    if is_production:
-        # For production, use a simpler approach
-        print(f"🚀 Starting production server on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port)
-    else:
-        # For development, use debug mode
-        print(f"🔧 Starting development server on port {port}")
+    # For local development only
+    if os.environ.get('RAILWAY_ENVIRONMENT') is None:
+        port = int(os.environ.get('PORT', 5000))
         socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    else:
+        print("🚀 Running in production - use gunicorn via Procfile")
