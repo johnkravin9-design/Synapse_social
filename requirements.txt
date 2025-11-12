@@ -28,7 +28,7 @@ cloudinary==1.40.0
 colorama==0.4.6
 constantly==23.10.4
 cookiecutter==2.6.0
-cryptography @ file:///home/builder/.termux-build/python-cryptography/src
+cryptography==41.0.2
 daphne==4.2.1
 distro==1.9.0
 Django==5.2.7
@@ -36,7 +36,6 @@ django-environ==0.12.0
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 dnspython==2.8.0
-eventlet==0.40.3
 fastapi==0.104.1
 flake8==7.3.0
 Flask==2.3.3
@@ -72,9 +71,6 @@ mccabe==0.7.0
 mdurl==0.1.2
 msgpack==1.1.2
 multidict==6.7.0
--e git+https://github.com/johnkravin9-design/multilang-boilerplate.git@60189b8d396fc2dd9b261addd36039db0ec6a8b1#egg=multilang_boilerplate
-mypy_extensions==1.1.0
-numpy @ file:///home/builder/.termux-build/python-numpy/src/dist/numpy-2.2.5-cp312-cp312-linux_arm.whl#sha256=ed53d8f840e71ef9239af418741e59f2db8765529d4c51d46e7c0efea1a54e08
 oauthlib==3.3.1
 packaging==25.0
 paramiko==2.11.0
@@ -110,13 +106,11 @@ python-slugify==8.0.4
 python-socketio==5.8.0
 pytokens==0.1.10
 PyYAML==6.0.1
-ranger-fm @ file:///home/builder/.termux-build/ranger/src
 redis==7.0.1
 requests==2.32.3
 requests-oauthlib==2.0.0
 rich==14.2.0
 rsa==4.9.1
-scapy==2.6.1
 service-identity==24.2.0
 setuptools==80.9.0
 shellingham==1.5.4
@@ -130,7 +124,6 @@ SQLAlchemy==2.0.44
 sqlparse==0.5.3
 starlette==0.27.0
 text-unidecode==1.3
--e git+https://github.com/johnkravin9-design/trend-idea-gen.git@3d177a0476c71e39d6921e63695a161926d1e685#egg=trend_idea_gen
 twilio==9.8.6
 Twisted==25.5.0
 txaio==25.9.2
@@ -145,3 +138,6 @@ wheel==0.45.1
 wsproto==1.2.0
 yarl==1.22.0
 zope.interface==8.0.1
+numpy==2.2.5
+-e git+https://github.com/johnkravin9-design/multilang-boilerplate.git@60189b8d396fc2dd9b261addd36039db0ec6a8b1#egg=multilang_boilerplate
+-e git+https://github.com/johnkravin9-design/trend-idea-gen.git@3d177a0476c71e39d6921e63695a161926d1e685#egg=trend_idea_gen
