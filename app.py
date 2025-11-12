@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 from flask import Flask, request, jsonify, session, render_template, redirect, url_for
 from flask_migrate import migrate
@@ -19,7 +23,7 @@ import base64
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(32)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///synapse.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///synapse.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Email Configuration
@@ -4282,29 +4286,53 @@ with app.app_context():
         print("   Username: demo")
         print("   Password: demo123")
 
+
 if __name__ == '__main__':
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+    
     print("\n" + "="*50)
-    print(" SYNAPSE SOCIAL PLATFORM")
+    print("🚀 SYNAPSE SOCIAL PLATFORM")
     print("="*50)
-    print("\n Email Configuration:")
+    print("\n📧 Email Configuration:")
     print(f"   Email: {app.config['MAIL_USERNAME']}")
-    print(f"   Status: {' Configured' if app.config['MAIL_PASSWORD'] else ' Not configured'}")
-    print("\n Server Information:")
-    print("   Local: http://127.0.0.1:5000")
-    print("   Network: http://0.0.0.0:5000")
-    print("\n Available Pages:")
+    print(f"   Status: {'✅ Configured' if app.config.get('MAIL_PASSWORD') else '❌ Not configured'}")
+    
+    print("\n🛠️  Cutting-Edge Features:")
+    print("   ✅ Ghost Mode & Privacy Controls")
+    print("   ✅ AR Reality Posts & Filters") 
+    print("   ✅ Life Moments with AI Mood Detection")
+    print("   ✅ Custom Profile Widgets & Layouts")
+    print("   ✅ Video Reactions & 360° Photos")
+    
+    print("\n🌐 Server Information:")
+    port = int(os.environ.get('PORT', 5000))
+    print(f"   Local: http://127.0.0.1:{port}")
+    print(f"   Network: http://0.0.0.0:{port}")
+    
+    print("\n📱 Available Pages:")
     print("   / - Landing page")
-    print("   /register - Sign up")
+    print("   /register - Sign up") 
     print("   /login - Login")
     print("   /feed - Main feed")
+    print("   /moments - Life moments feed")
     print("   /explore - Discover")
     print("   /reels - Short videos")
     print("   /messages - Direct messages")
     print("   /notifications - Notifications")
     print("   /profile/<username> - User profile")
+    print("   /profile/builder - Custom profile builder")
     print("   /saved - Saved posts")
     print("   /settings - Account settings")
-    print("\n API Endpoints: /api/*")
-    print("="*50 + "\n")
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    print("\n🔧 API Endpoints: /api/*")
+    print("   /api/privacy/settings - Ghost mode controls")
+    print("   /api/ar/filters - AR features")
+    print("   /api/moments - Life moments")
+    print("   /api/profile/widgets - Custom widgets")
+    print("="*50 + "\n")
+
+    # Use environment port for production
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug_mode, allow_unsafe_werkzeug=True)
