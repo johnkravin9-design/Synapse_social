@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Posts - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="text-white hover:text-pink-400">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Saved Posts</h1>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Saved Posts Grid -->
+        <div id="saved-posts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Loading -->
+            <div class="col-span-full text-center py-20">
+                <i class="fas fa-bookmark text-6xl text-pink-500/50 mb-4 animate-pulse"></i>
+                <p class="text-gray-400">Loading saved posts...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <i class="fas fa-bookmark text-8xl text-gray-600/50 mb-6"></i>
+            <h3 class="text-2xl font-bold mb-2">No saved posts yet</h3>
+            <p class="text-gray-400 mb-6">Save posts you love to find them later</p>
+            <a href="/feed" class="bg-gradient-to-r from-pink-500 to-purple-500 px-6 py-3 rounded-full font-bold hover:from-pink-600 hover:to-purple-600 transition">
+                Explore Feed
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        async function loadSavedPosts() {
+            try {
+                const response = await fetch(`${API_URL}/api/saved`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    renderSavedPosts(result.posts || []);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error loading saved posts:', error);
+                showError();
+            }
+        }
+
+        function renderSavedPosts(posts) {
+            const container = document.getElementById('saved-posts');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (posts.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            container.innerHTML = posts.map(post => `
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4 border border-purple-500/30 hover:border-pink-500/50 transition">
+                    <div class="flex items-center space-x-3 mb-3">
+                        <span class="text-2xl">${post.user.avatar}</span>
+                        <div>
+                            <p class="font-bold">${post.user.username}</p>
+                        </div>
+                    </div>
+                    
+                    ${post.image ? `
+                        <img src="${post.image}" class="w-full h-48 object-cover rounded-lg mb-3" alt="Post image">
+                    ` : ''}
+                    
+                    <p class="text-sm text-gray-300 mb-3">${post.content || ''}</p>
+                    
+                    <div class="flex items-center justify-between text-sm text-gray-400">
+                        <div class="flex items-center space-x-4">
+                            <span><i class="fas fa-heart mr-1"></i> ${post.likes}</span>
+                            <span><i class="fas fa-comment mr-1"></i> ${post.comments}</span>
+                        </div>
+                        <button onclick="unsavePost(${post.id})" class="text-pink-400 hover:text-pink-300">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            emptyState.classList.add('hidden');
+        }
+
+        function showError() {
+            const container = document.getElementById('saved-posts');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <i class="fas fa-exclamation-triangle text-6xl text-red-500/50 mb-4"></i>
+                    <p class="text-red-400">Error loading saved posts</p>
+                    <button onclick="loadSavedPosts()" class="mt-4 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        async function unsavePost(postId) {
+            try {
+                const response = await fetch(`${API_URL}/api/posts/${postId}/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    loadSavedPosts(); // Reload the list
+                }
+            } catch (error) {
+                console.error('Error unsaving post:', error);
+            }
+        }
+
+        // Load saved posts on page load
+        window.addEventListener('load', loadSavedPosts);
+    </script>
+</body>
+</html>

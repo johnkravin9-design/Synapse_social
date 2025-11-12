@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Feed - Synapse{% endblock %}
+
+{% block content %}
+<!-- Your existing feed content here -->
+<script>
+    // Update the API URLs in the JavaScript section
+    async function loadStories() {
+        try {
+            const result = await apiRequest('/api/stories', 'GET');
+            stories = result.stories;
+            renderStories();
+        } catch (error) {
+            console.error('Error loading stories:', error);
+        }
+    }
+
+    async function loadPosts() {
+        try {
+            const result = await apiRequest('/api/posts', 'GET');
+            posts = result.posts;
+            renderPosts();
+        } catch (error) {
+            console.error('Error loading posts:', error);
+        }
+    }
+</script>
+{% endblock %}

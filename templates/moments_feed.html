@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Moments - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <div class="max-w-2xl mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold">📸 Life Moments</h1>
+                <p class="text-gray-400">Real moments, real emotions</p>
+            </div>
+            <a href="/create/moment" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-full font-bold transition">
+                + Create Moment
+            </a>
+        </div>
+
+        <!-- Moments Feed -->
+        <div id="moments-feed" class="space-y-6">
+            <!-- Moments will be loaded here dynamically -->
+            <div class="text-center py-12 text-gray-400">
+                <i class="fas fa-camera text-4xl mb-3"></i>
+                <p>No moments yet. Be the first to share!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        async function loadMoments() {
+            try {
+                const token = localStorage.getItem('synapse_token');
+                const response = await fetch(`${API_URL}/api/moments/feed`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderMoments(data.moments);
+                }
+            } catch (error) {
+                console.error('Error loading moments:', error);
+            }
+        }
+
+        function renderMoments(moments) {
+            const container = document.getElementById('moments-feed');
+            
+            if (moments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-camera text-4xl mb-3"></i>
+                        <p>No moments yet. Be the first to share!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = moments.map(moment => `
+                <div class="moment-card bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <img src="${moment.user.avatar || '/static/default-avatar.png'}" 
+                                 alt="${moment.user.username}" 
+                                 class="w-10 h-10 rounded-full border-2 border-pink-400">
+                            <div>
+                                <p class="font-bold">${moment.user.username}</p>
+                                <p class="text-sm text-gray-400 flex items-center">
+                                    <span class="moment-mood">🎯</span>
+                                    Feeling ${moment.mood} • ${moment.location_name || 'Somewhere'} • ${new Date(moment.created_at).toLocaleTimeString()}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="weather-context bg-black/20 px-3 py-1 rounded-full text-sm">
+                            ${moment.weather ? '🌤️ ' + moment.weather : '📍'} • ${moment.temperature || '?'}°C
+                        </div>
+                    </div>
+
+                    ${moment.content ? `<p class="mb-4 text-white/80">${moment.content}</p>` : ''}
+
+                    ${moment.media_url ? `
+                        <div class="mb-4 rounded-xl overflow-hidden">
+                            <img src="${moment.media_url}" alt="Moment" class="w-full h-64 object-cover">
+                        </div>
+                    ` : ''}
+
+                    <div class="reactions-section border-t border-white/10 pt-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-4">
+                                <button onclick="openVideoReaction(${moment.id})" 
+                                        class="flex items-center space-x-2 bg-pink-500/20 hover:bg-pink-500/30 px-4 py-2 rounded-full transition">
+                                    <i class="fas fa-video"></i>
+                                    <span>React with Video</span>
+                                </button>
+                                
+                                <div class="flex space-x-2">
+                                    <button onclick="quickReact(${moment.id}, '❤️')" class="emoji-reaction hover:scale-110 transition">❤️</button>
+                                    <button onclick="quickReact(${moment.id}, '😂')" class="emoji-reaction hover:scale-110 transition">😂</button>
+                                    <button onclick="quickReact(${moment.id}, '😮')" class="emoji-reaction hover:scale-110 transition">😮</button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4 text-sm text-gray-400">
+                                <span>${moment.video_reactions_count || 0} video reactions</span>
+                                <span>${moment.emoji_reactions_count || 0} emoji reactions</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function quickReact(momentId, emoji) {
+            try {
+                const token = localStorage.getItem('synapse_token');
+                await fetch(`${API_URL}/api/moments/${momentId}/react`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        reaction_type: 'emoji',
+                        emoji: emoji
+                    })
+                });
+                
+                // Reload moments
+                loadMoments();
+            } catch (error) {
+                console.error('Error reacting:', error);
+            }
+        }
+
+        function openVideoReaction(momentId) {
+            alert('Video reactions coming soon!');
+        }
+
+        // Load moments when page loads
+        document.addEventListener('DOMContentLoaded', loadMoments);
+    </script>
+</body>
+</html>

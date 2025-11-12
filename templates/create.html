@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Post - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="text-white hover:text-pink-400">
+                    <i class="fas fa-times text-2xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Create Post</h1>
+            </div>
+            <button onclick="publishPost()" class="bg-pink-500 hover:bg-pink-600 px-6 py-2 rounded-lg font-bold transition disabled:opacity-50 disabled:cursor-not-allowed" id="publish-btn">
+                Share
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Create Type Selection -->
+        <div class="mb-6">
+            <div class="grid grid-cols-3 gap-4">
+                <button onclick="selectType('post')" class="type-btn active bg-pink-500 hover:bg-pink-600 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-image text-2xl mb-2"></i>
+                    <p>Post</p>
+                </button>
+                <button onclick="selectType('story')" class="type-btn bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-circle-notch text-2xl mb-2"></i>
+                    <p>Story</p>
+                </button>
+                <button onclick="selectType('reel')" class="type-btn bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-film text-2xl mb-2"></i>
+                    <p>Reel</p>
+                </button>
+                <button onclick="selectType('live')" class="type-btn bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition">
+		    <i class="fas fa-broadcast-tower text-2xl mb-2"></i>
+		    <p>Go Live</p>
+	        </button>
+            </div>
+        </div>
+
+        <!-- Post Creator -->
+        <div id="post-creator" class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500">
+            <!-- User Info -->
+            <div class="flex items-center space-x-3 mb-6">
+                <span id="user-avatar" class="text-4xl">🚀</span>
+                <div>
+                    <p id="user-name" class="font-bold">Username</p>
+                    <p class="text-sm text-gray-400">Share with followers</p>
+                </div>
+            </div>
+
+            <!-- Image/Media Selection -->
+            <div class="mb-6">
+                <div id="media-preview" class="hidden bg-black/40 rounded-xl p-8 mb-4 text-center">
+                    <div id="preview-content" class="text-9xl"></div>
+                    <img id="preview-image" class="hidden max-w-full max-h-96 mx-auto rounded-lg" />
+                    <video id="preview-video" class="hidden max-w-full max-h-96 mx-auto rounded-lg" controls></video>
+                    <button onclick="removeMedia()" class="mt-4 text-red-400 hover:text-red-300 text-sm">
+                        <i class="fas fa-times mr-1"></i>Remove
+                    </button>
+                </div>
+
+                <input type="file" id="file-input" accept="image/*,video/*" class="hidden" onchange="handleFileSelect(event)">
+                
+                <button onclick="document.getElementById('file-input').click()" class="w-full border-2 border-dashed border-gray-600 hover:border-pink-500 rounded-xl py-12 transition">
+                    <i class="fas fa-cloud-upload-alt text-6xl text-gray-600 mb-4"></i>
+                    <p class="text-lg font-bold">Click to upload photos or videos</p>
+                    <p class="text-sm text-gray-400 mt-2">Or choose an emoji below</p>
+                </button>
+
+                <!-- Emoji Grid -->
+                <div id="emoji-grid" class="hidden mt-4 grid grid-cols-8 gap-2">
+                    <button onclick="selectEmoji('🌟')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🌟</button>
+                    <button onclick="selectEmoji('🎨')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎨</button>
+                    <button onclick="selectEmoji('🚀')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🚀</button>
+                    <button onclick="selectEmoji('💡')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">💡</button>
+                    <button onclick="selectEmoji('🔥')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🔥</button>
+                    <button onclick="selectEmoji('⚡')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">⚡</button>
+                    <button onclick="selectEmoji('🎯')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎯</button>
+                    <button onclick="selectEmoji('💪')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">💪</button>
+                    <button onclick="selectEmoji('🌈')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🌈</button>
+                    <button onclick="selectEmoji('✨')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">✨</button>
+                    <button onclick="selectEmoji('🎉')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎉</button>
+                    <button onclick="selectEmoji('🎪')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎪</button>
+                    <button onclick="selectEmoji('🎭')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎭</button>
+                    <button onclick="selectEmoji('🎬')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎬</button>
+                    <button onclick="selectEmoji('🎥')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎥</button>
+                    <button onclick="selectEmoji('📸')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">📸</button>
+                </div>
+            </div>
+
+            <!-- Caption -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Caption</label>
+                <textarea 
+                    id="caption"
+                    rows="4"
+                    class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                    placeholder="Write a caption..."
+                    maxlength="2200"
+                ></textarea>
+                <p class="text-xs text-gray-400 mt-1"><span id="caption-count">0</span>/2,200</p>
+            </div>
+
+            <!-- Add this to your create.html after the caption section -->
+<!-- AI Assistant Section -->
+<div class="mb-6 border-t border-gray-700 pt-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-lg">
+            <i class="fas fa-robot text-pink-500 mr-2"></i>
+            AI Assistant
+        </h3>
+        <button onclick="toggleAIAssistant()" class="text-sm text-pink-500 hover:text-pink-400">
+            <i class="fas fa-magic mr-1"></i>
+            Enhance Content
+        </button>
+    </div>
+
+    <div id="ai-assistant" class="hidden space-y-3">
+        <!-- AI Caption Suggestions -->
+        <div class="bg-white/5 rounded-lg p-4">
+            <h4 class="font-bold mb-2">Caption Suggestions</h4>
+            <div id="caption-suggestions" class="space-y-2 max-h-32 overflow-y-auto">
+                <p class="text-sm text-gray-400">Click "Enhance Content" to get AI suggestions</p>
+            </div>
+            <button onclick="generateAICaptions()" class="mt-2 text-sm bg-pink-500 hover:bg-pink-600 px-3 py-1 rounded">
+                <i class="fas fa-wand-magic-sparkles mr-1"></i>
+                Generate More
+            </button>
+        </div>
+
+        <!-- Hashtag Suggestions -->
+        <div class="bg-white/5 rounded-lg p-4">
+            <h4 class="font-bold mb-2">Hashtag Suggestions</h4>
+            <div id="hashtag-suggestions" class="flex flex-wrap gap-1">
+                <p class="text-sm text-gray-400">Get relevant hashtags</p>
+            </div>
+            <button onclick="suggestHashtags()" class="mt-2 text-sm bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded">
+                <i class="fas fa-hashtag mr-1"></i>
+                Suggest Hashtags
+            </button>
+        </div>
+
+        <!-- Content Analysis -->
+        <div class="bg-white/5 rounded-lg p-4">
+            <h4 class="font-bold mb-2">Content Analysis</h4>
+            <div id="content-analysis" class="text-sm">
+                <p class="text-gray-400">Analyze your content for engagement</p>
+            </div>
+            <button onclick="analyzeContent()" class="mt-2 text-sm bg-green-500 hover:bg-green-600 px-3 py-1 rounded">
+                <i class="fas fa-chart-line mr-1"></i>
+                Analyze
+            </button>
+        </div>
+    </div>
+</div>
+
+            <!-- Location -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Add Location
+                </label>
+                <input 
+                    type="text" 
+                    id="location"
+                    class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="Search location..."
+                >
+            </div>
+
+            <!-- Tag People -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">
+                    <i class="fas fa-user-tag mr-2"></i>Tag People
+                </label>
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="text" 
+                        id="tag-input"
+                        class="flex-1 bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        placeholder="Search users..."
+                    >
+                    <button onclick="openTagModal()" class="bg-pink-500 hover:bg-pink-600 px-4 py-3 rounded-lg transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="tagged-users" class="flex flex-wrap gap-2 mt-3">
+                    <!-- Tagged users will appear here -->
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="border-t border-gray-700 pt-6 space-y-3">
+                <button onclick="toggleOption('comments')" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-comment mr-3"></i>Turn off commenting</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="allow-comments" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </button>
+
+                <button onclick="toggleOption('sharing')" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-share mr-3"></i>Hide like and view counts</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="hide-counts" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </button>
+
+                <button onclick="openFilters()" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-magic mr-3"></i>Add Filter</span>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Save as Draft -->
+        <button onclick="saveDraft()" class="w-full mt-4 bg-white/10 hover:bg-white/20 py-4 rounded-lg font-bold transition">
+            <i class="fas fa-save mr-2"></i>Save as Draft
+        </button>
+    </div>
+
+    <!-- Tag Users Modal -->
+    <div id="tag-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Tag People</h2>
+                <button onclick="closeTagModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 border-b border-gray-800">
+                <input 
+                    type="text" 
+                    id="search-users"
+                    placeholder="Search users..."
+                    class="w-full bg-gray-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+            </div>
+
+            <div id="users-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Users will be loaded here -->
+                <p class="text-center text-gray-400 py-8">Search for users to tag</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Modal -->
+    <div id="filters-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-2xl">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Choose Filter</h2>
+                <button onclick="closeFilters()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 grid grid-cols-3 gap-4">
+                <button onclick="applyFilter('normal')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">📷</div>
+                    <p class="text-sm">Normal</p>
+                </button>
+                <button onclick="applyFilter('vintage')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">🎞️</div>
+                    <p class="text-sm">Vintage</p>
+                </button>
+                <button onclick="applyFilter('bw')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">⚫</div>
+                    <p class="text-sm">B&W</p>
+                </button>
+                <button onclick="applyFilter('warm')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">🌅</div>
+                    <p class="text-sm">Warm</p>
+                </button>
+                <button onclick="applyFilter('cool')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">❄️</div>
+                    <p class="text-sm">Cool</p>
+                </button>
+                <button onclick="applyFilter('bright')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">☀️</div>
+                    <p class="text-sm">Bright</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const API_URL = 'http://localhost:5000';
+    let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+    let selectedMedia = null;
+    let selectedMediaType = null;
+    let taggedUsers = [];
+    let postType = 'post';
+    let selectedFilter = 'normal';
+
+    function getToken() {
+        return localStorage.getItem('synapse_token');
+    }
+
+    // Load user data
+    window.addEventListener('load', () => {
+        if (currentUser && currentUser.username) {
+            document.getElementById('user-avatar').textContent = currentUser.avatar || '👤';
+            document.getElementById('user-name').textContent = currentUser.username;
+        } else {
+            // Redirect to login if not authenticated
+            window.location.href = '/login';
+        }
+    });
+
+    // Caption character count
+    document.getElementById('caption').addEventListener('input', () => {
+        const count = document.getElementById('caption').value.length;
+        document.getElementById('caption-count').textContent = count;
+    });
+
+    function selectType(type) {
+        postType = type;
+
+        // Update button styles
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.classList.remove('active', 'bg-pink-500');
+            btn.classList.add('bg-white/10');
+        });
+
+        event.target.classList.add('active', 'bg-pink-500');
+        event.target.classList.remove('bg-white/10');
+
+        // Show appropriate alerts
+        if (type === 'story') {
+            alert('📸 Stories disappear after 24 hours!');
+        } else if (type === 'reel') {
+            alert('🎬 Reels are short videos!');
+        } else if (type === 'live') {
+            alert('🎥 Go live and connect with your audience in real-time!');
+        }
+    }
+
+    // Handle file selection
+    async function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Show loading
+        showLoading();
+
+        try {
+            // Create FormData
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Upload file
+            const response = await fetch(`${API_URL}/api/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            hideLoading();
+
+            if (response.ok) {
+                selectedMedia = result.data_url;
+                selectedMediaType = result.file_type;
+
+                // Show preview
+                document.getElementById('media-preview').classList.remove('hidden');
+                document.getElementById('preview-content').classList.add('hidden');
+
+                if (result.file_type === 'image') {
+                    const img = document.getElementById('preview-image');
+                    img.src = result.data_url;
+                    img.classList.remove('hidden');
+                    document.getElementById('preview-video').classList.add('hidden');
+                } else {
+                    const video = document.getElementById('preview-video');
+                    video.src = result.data_url;
+                    video.classList.remove('hidden');
+                    document.getElementById('preview-image').classList.add('hidden');
+                }
+
+                document.getElementById('emoji-grid').classList.add('hidden');
+                showToast('✅ File uploaded successfully!', 'success');
+            } else {
+                throw new Error(result.error || 'Upload failed');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('❌ ' + error.message, 'error');
+        }
+    }
+
+    function selectMedia() {
+        document.getElementById('emoji-grid').classList.remove('hidden');
+    }
+
+    function selectEmoji(emoji) {
+        selectedMedia = emoji;
+        selectedMediaType = 'emoji';
+        document.getElementById('preview-content').textContent = emoji;
+        document.getElementById('preview-content').classList.remove('hidden');
+        document.getElementById('preview-image').classList.add('hidden');
+        document.getElementById('preview-video').classList.add('hidden');
+        document.getElementById('media-preview').classList.remove('hidden');
+        document.getElementById('emoji-grid').classList.add('hidden');
+    }
+
+    function removeMedia() {
+        selectedMedia = null;
+        selectedMediaType = null;
+        document.getElementById('media-preview').classList.add('hidden');
+        document.getElementById('preview-content').textContent = '';
+        document.getElementById('preview-image').src = '';
+        document.getElementById('preview-video').src = '';
+        document.getElementById('file-input').value = '';
+    }
+
+    function showLoading() {
+        const btn = document.getElementById('publish-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+
+    function hideLoading() {
+        const btn = document.getElementById('publish-btn');
+        btn.disabled = false;
+        btn.textContent = 'Share';
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function openTagModal() {
+        document.getElementById('tag-modal').classList.remove('hidden');
+    }
+
+    function closeTagModal() {
+        document.getElementById('tag-modal').classList.add('hidden');
+    }
+
+    function openFilters() {
+        document.getElementById('filters-modal').classList.remove('hidden');
+    }
+
+    function closeFilters() {
+        document.getElementById('filters-modal').classList.add('hidden');
+    }
+
+    function applyFilter(filter) {
+        selectedFilter = filter;
+        alert(`✨ ${filter.charAt(0).toUpperCase() + filter.slice(1)} filter applied!`);
+        closeFilters();
+    }
+
+    // AI Assistant Functions
+function toggleAIAssistant() {
+    const assistant = document.getElementById('ai-assistant');
+    assistant.classList.toggle('hidden');
+    
+    if (!assistant.classList.contains('hidden')) {
+        // Auto-generate suggestions when opened
+        generateAICaptions();
+        suggestHashtags();
+    }
+}
+
+async function generateAICaptions() {
+    const caption = document.getElementById('caption').value;
+    const mood = 'creative'; // You can let users select mood
+    
+    try {
+        const response = await fetch(`${API_URL}/api/ai/generate-caption`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                content: caption,
+                mood: mood
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            const container = document.getElementById('caption-suggestions');
+            container.innerHTML = result.captions.map((caption, index) => `
+                <div class="flex items-center justify-between p-2 bg-white/5 rounded">
+                    <p class="text-sm flex-1">${caption}</p>
+                    <button onclick="useAICaption('${caption.replace(/'/g, "\\'")}')" 
+                            class="ml-2 text-pink-500 hover:text-pink-400 text-xs">
+                        Use
+                    </button>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('AI caption error:', error);
+    }
+}
+
+function useAICaption(caption) {
+    document.getElementById('caption').value = caption;
+    showToast('✅ Caption applied!', 'success');
+}
+
+async function suggestHashtags() {
+    const caption = document.getElementById('caption').value;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/ai/suggest-hashtags`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                content: caption,
+                category: 'general'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            const container = document.getElementById('hashtag-suggestions');
+            container.innerHTML = result.hashtags.map(hashtag => `
+                <span class="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-xs cursor-pointer hover:bg-purple-500/30"
+                      onclick="addHashtag('${hashtag}')">
+                    ${hashtag}
+                </span>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Hashtag error:', error);
+    }
+}
+
+function addHashtag(hashtag) {
+    const caption = document.getElementById('caption');
+    caption.value = caption.value + ' ' + hashtag;
+    showToast(`✅ Added ${hashtag}`, 'success');
+}
+
+async function analyzeContent() {
+    const caption = document.getElementById('caption').value;
+    
+    try {
+        const response = await fetch(`${API_URL}/api/ai/analyze-content`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                content: caption
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            const container = document.getElementById('content-analysis');
+            const analysis = result.analysis;
+            
+            container.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Sentiment:</span>
+                        <span class="capitalize ${analysis.sentiment === 'positive' ? 'text-green-400' : analysis.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400'}">
+                            ${analysis.sentiment} (${Math.round(analysis.confidence * 100)}%)
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Content Safety:</span>
+                        <span class="${analysis.is_safe ? 'text-green-400' : 'text-red-400'}">
+                            ${analysis.is_safe ? '✅ Safe' : '⚠️ Review Needed'}
+                        </span>
+                    </div>
+                    ${result.suggestions.length > 0 ? `
+                        <div class="mt-2 p-2 bg-yellow-500/20 rounded text-xs">
+                            <strong>Suggestions:</strong>
+                            <ul class="list-disc list-inside mt-1">
+                                ${result.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Content analysis error:', error);
+    }
+}
+
+    function toggleOption(option) {
+        // Options are handled by checkboxes
+    }
+
+    async function publishPost() {
+        const caption = document.getElementById('caption').value;
+        const location = document.getElementById('location').value;
+
+        // Validation
+        if (postType !== 'live' && !selectedMedia && !caption) {
+            alert('❌ Please add media or write a caption');
+            return;
+        }
+
+        if (postType === 'live' && !caption) {
+            alert('❌ Please add a title for your live stream');
+            return;
+        }
+
+        const publishBtn = document.getElementById('publish-btn');
+        publishBtn.disabled = true;
+        publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sharing...';
+
+        try {
+            let endpoint, data;
+
+            if (postType === 'post') {
+                endpoint = '/api/posts';
+                data = {
+                    content: caption,
+                    image: selectedMedia,
+                    location: location,
+                    taggedUsers: taggedUsers
+                };
+            } else if (postType === 'story') {
+                endpoint = '/api/stories';
+                data = {
+                    content: caption,
+                    emoji: selectedMedia
+                };
+            } else if (postType === 'reel') {
+                endpoint = '/api/reels';
+                data = {
+                    media_url: selectedMedia,
+                    caption: caption,
+                    media_type: selectedMediaType || 'image'
+                };
+            } else if (postType === 'live') {
+                endpoint = '/api/live/start';
+                data = {
+                    title: caption || 'My Live Stream',
+                    description: caption
+                };
+            }
+
+            console.log('Sending to:', endpoint);
+            console.log('Data:', data);
+
+            const response = await fetch(API_URL + endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                if (postType === 'live') {
+                    showStreamInfo(result);
+                } else {
+                    showToast('✅ ' + result.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/feed';
+                    }, 1500);
+                }
+            } else {
+                throw new Error(result.error || 'Failed to create');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('❌ Error: ' + error.message, 'error');
+            publishBtn.disabled = false;
+            publishBtn.textContent = 'Share';
+        }
+    }
+
+    function showStreamInfo(streamData) {
+        const modalHtml = `
+            <div class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+                <div class="bg-gray-900 rounded-2xl p-6 max-w-md w-full">
+                    <div class="text-center">
+                        <i class="fas fa-broadcast-tower text-6xl text-pink-500 mb-4"></i>
+                        <h2 class="text-2xl font-bold mb-4">Live Stream Started!</h2>
+                        
+                        <div class="bg-gray-800 rounded-lg p-4 mb-4 text-left">
+                            <p class="text-sm text-gray-400 mb-2">Stream Key:</p>
+                            <p class="font-mono bg-black p-2 rounded break-all">${streamData.stream_key}</p>
+                            
+                            <p class="text-sm text-gray-400 mt-4 mb-2">Stream URL:</p>
+                            <p class="font-mono bg-black p-2 rounded break-all text-sm">${streamData.stream_url}</p>
+                        </div>
+                        
+                        <p class="text-gray-400 text-sm mb-4">
+                            Use this stream key in your broadcasting software (OBS, Streamlabs, etc.)
+                        </p>
+                        
+                        <div class="flex space-x-3">
+                            <button onclick="copyToClipboard('${streamData.stream_key}')" 
+                                    class="flex-1 bg-blue-500 hover:bg-blue-600 py-2 rounded-lg transition">
+                                Copy Stream Key
+                            </button>
+                            <button onclick="goToStream(${streamData.stream_id})" 
+                                    class="flex-1 bg-pink-500 hover:bg-pink-600 py-2 rounded-lg transition">
+                                View Stream
+                            </button>
+                        </div>
+                        
+                        <button onclick="closeStreamInfo()" 
+                                class="w-full mt-3 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg transition">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const modal = document.createElement('div');
+        modal.innerHTML = modalHtml;
+        document.body.appendChild(modal);
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('📋 Copied to clipboard!', 'success');
+        });
+    }
+
+    function goToStream(streamId) {
+        window.location.href = `/live?id=${streamId}`;
+    }
+
+    function closeStreamInfo() {
+        const modal = document.querySelector('.fixed.inset-0.bg-black');
+        if (modal) {
+            modal.remove();
+        }
+        window.location.href = '/feed';
+    }
+
+    function saveDraft() {
+        const draft = {
+            type: postType,
+            caption: document.getElementById('caption').value,
+            media: selectedMedia,
+            location: document.getElementById('location').value,
+            taggedUsers: taggedUsers,
+            timestamp: new Date().toISOString()
+        };
+
+        localStorage.setItem('synapse_draft', JSON.stringify(draft));
+        alert('💾 Draft saved! You can continue later.');
+        window.location.href = '/feed';
+    }
+
+    // Load draft if exists
+    const draft = localStorage.getItem('synapse_draft');
+    if (draft) {
+        const draftData = JSON.parse(draft);
+        if (confirm('📝 You have a saved draft. Would you like to continue?')) {
+            document.getElementById('caption').value = draftData.caption || '';
+            document.getElementById('location').value = draftData.location || '';
+            if (draftData.media) {
+                selectEmoji(draftData.media);
+            }
+            taggedUsers = draftData.taggedUsers || [];
+        }
+    }
+</script>
+</body>
+</html>

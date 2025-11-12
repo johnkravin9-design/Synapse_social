@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}Feed - Synapse{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Sidebar -->
+        <div class="lg:col-span-3 space-y-4">
+            <!-- Live Activity -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <h3 class="font-bold text-lg mb-4 flex items-center">
+                    <i class="fas fa-bolt text-yellow-400 mr-2"></i>
+                    Live Activity
+                </h3>
+                <div id="live-activity" class="space-y-3">
+                    <div class="text-sm bg-white/5 p-2 rounded animate-pulse">👤 Loading activity...</div>
+                </div>
+            </div>
+            
+            <!-- Invite System -->
+            <div class="bg-gradient-to-br from-yellow-600 to-orange-600 rounded-xl p-4 border border-yellow-400">
+                <h3 class="font-bold text-lg mb-2 flex items-center">
+                    <i class="fas fa-gift mr-2"></i>
+                    Invite & Earn
+                </h3>
+                <p class="text-sm mb-3">Get 100 points per friend!</p>
+                <div class="bg-black/30 rounded p-2 mb-3 text-center font-mono text-sm" id="invite-code">
+                    SYNAPSE-XXXX
+                </div>
+                <button onclick="copyInvite()" class="w-full bg-white text-orange-600 font-bold py-2 rounded-lg hover:bg-opacity-90 transition">
+                    Copy Invite Link
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Feed -->
+        <div class="lg:col-span-6 space-y-4">
+            <!-- Stories -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <div class="flex items-center space-x-4 overflow-x-auto pb-2" id="stories-container">
+                    <!-- Create Story -->
+                    <div class="flex-shrink-0 text-center">
+                        <a href="/create" class="story-circle border-4 border-dashed border-gray-500">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center">
+                                <i class="fas fa-plus text-2xl"></i>
+                            </div>
+                        </a>
+                        <p class="text-xs mt-1">Create</p>
+                    </div>
+                    <!-- Stories will load here -->
+                </div>
+            </div>
+            
+            <!-- Create Post -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <div class="flex space-x-3">
+                    <span id="user-avatar-post" class="text-3xl">🚀</span>
+                    <div class="flex-1">
+                        <textarea 
+                            id="post-content"
+                            placeholder="What's on your mind?"
+                            class="w-full bg-white/10 rounded-lg p-3 border border-purple-400 focus:border-pink-400 outline-none resize-none"
+                            rows="3"
+                        ></textarea>
+                        
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="flex space-x-2">
+                                <button onclick="window.location.href='/create'" class="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button class="p-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                                    <i class="fas fa-users"></i>
+                                </button>
+                            </div>
+                            <button onclick="quickPost()" class="bg-gradient-to-r from-pink-500 to-purple-500 px-6 py-2 rounded-lg font-bold hover:from-pink-600 hover:to-purple-600 transition">
+                                Post
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Posts Feed -->
+            <div id="posts-container" class="space-y-4">
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
+                    <p class="mt-2 text-gray-400">Loading posts...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar -->
+        <div class="lg:col-span-3 space-y-4">
+            <!-- Trending -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <h3 class="font-bold text-lg mb-4">🔥 Trending</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm hover:bg-white/5 p-2 rounded cursor-pointer">
+                        <span>#Innovation</span>
+                        <span class="text-gray-400">234K</span>
+                    </div>
+                    <div class="flex justify-between text-sm hover:bg-white/5 p-2 rounded cursor-pointer">
+                        <span>#Startup</span>
+                        <span class="text-gray-400">189K</span>
+                    </div>
+                    <div class="flex justify-between text-sm hover:bg-white/5 p-2 rounded cursor-pointer">
+                        <span>#AI</span>
+                        <span class="text-gray-400">567K</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Suggested Friends -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <h3 class="font-bold text-lg mb-4">Suggested</h3>
+                <div id="suggestions" class="space-y-3">
+                    <p class="text-sm text-gray-400">Loading suggestions...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const API_URL = 'http://localhost:5000';
+    let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+    
+    function getToken() {
+        return localStorage.getItem('synapse_token');
+    }
+
+    // Check if logged in
+    if (!getToken()) {
+        window.location.href = '/login';
+    }
+
+    // Update user avatar
+    if (currentUser.avatar) {
+        document.getElementById('user-avatar-post').textContent = currentUser.avatar;
+    }
+
+    // Load feed on page load
+    window.addEventListener('load', async () => {
+        await loadStories();
+        await loadPosts();
+        startLiveActivity();
+        generateInviteCode();
+    });
+
+async function loadStories() {
+‎    try {
+‎        const response = await fetch(API_URL + '/api/stories', {
+‎            headers: { 'Authorization': `Bearer ${getToken()}` }
+‎        });
+‎        const result = await response.json();
+‎        
+‎        if (result.stories && result.stories.length > 0) {
+‎            renderStories(result.stories);
+‎        }
+‎    } catch (error) {
+‎        console.error('Error loading stories:', error);
+‎    }
+‎}
+‎
+‎function renderStories(stories) {
+‎    const container = document.getElementById('stories-container');
+‎    const existingCreate = container.querySelector('.flex-shrink-0');
+‎    
+‎    const storiesHTML = stories.map(story => `
+‎        <div class="flex-shrink-0 text-center cursor-pointer" onclick="viewStory(${story.id})">
+‎            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-1">
+‎                <div class="w-full h-full rounded-full bg-gray-900 flex items-center justify-center text-3xl">
+‎                    ${story.user.avatar}
+‎                </div>
+‎            </div>
+‎            <p class="text-xs mt-1 truncate w-16">${story.user.username}</p>
+‎        </div>
+‎    `).join('');
+‎    
+‎    container.innerHTML = existingCreate.outerHTML + storiesHTML;
+‎}
+‎
+‎// Call loadStories in window.onload
+‎window.addEventListener('load', async () => {
+‎    await loadStories();  // ADD THIS LINE
+‎    await loadPosts();
+‎});
+‎
+
+    async function loadPosts() {
+        try {
+            const token = getToken();
+            const endpoint = token ? '/api/posts' : '/api/public/posts';
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            
+            const response = await fetch(API_URL + endpoint, { headers });
+            const result = await response.json();
+            
+            renderPosts(result.posts);
+        } catch (error) {
+            console.error('Error loading posts:', error);
+            document.getElementById('posts-container').innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-circle text-4xl text-red-500"></i>
+                    <p class="mt-2 text-red-400">Error loading posts</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderPosts(posts) {
+        const container = document.getElementById('posts-container');
+        
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-images text-6xl text-gray-600"></i>
+                    <p class="mt-4 text-xl">No posts yet</p>
+                    <a href="/create" class="mt-4 inline-block bg-pink-500 px-6 py-3 rounded-full font-bold">Create First Post</a>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = posts.map(post => `
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-purple-500">
+                <!-- Post Header -->
+                <div class="flex items-start gap-3 mb-3">
+                    <span class="text-3xl">${post.user.avatar}</span>
+                    <div class="flex-1">
+                        <h4 class="font-bold flex items-center">
+                            ${post.user.username}
+                            ${post.user.is_verified ? '<i class="fas fa-check-circle text-blue-500 text-sm ml-1"></i>' : ''}
+                        </h4>
+                        <p class="text-xs text-gray-400">${post.timestamp}</p>
+                    </div>
+                </div>
+                
+                <!-- Post Content -->
+                ${post.content ? `<p class="mb-3">${post.content}</p>` : ''}
+                
+                <!-- Post Image -->
+                ${post.image ? `
+                    <div class="bg-black/40 rounded-lg p-8 text-center text-8xl mb-3">
+                        ${post.image.startsWith('data:') ? 
+                            `<img src="${post.image}" class="max-w-full max-h-96 mx-auto rounded-lg" />` :
+                            post.image
+                        }
+                    </div>
+                ` : ''}
+                
+                <!-- Post Stats -->
+                <div class="flex items-center justify-between text-sm text-gray-400 mb-3 pb-3 border-b border-gray-700">
+                    <span>${post.likes} likes</span>
+                    <div class="flex gap-4">
+                        <span>${post.comments} comments</span>
+                        <span>${post.shares} shares</span>
+                    </div>
+                </div>
+                
+                <!-- Post Actions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="likePost(${post.id})" class="flex-1 flex items-center justify-center gap-2 py-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">
+                        <i class="far fa-heart text-xl"></i>
+                        Like
+                    </button>
+                    <button class="flex-1 flex items-center justify-center gap-2 py-2 bg-white/10 rounded-lg hover:bg-blue-500 transition">
+                        <i class="far fa-comment text-xl"></i>
+                        Comment
+                    </button>
+                    <button onclick="sharePost(${post.id})" class="flex-1 flex items-center justify-center gap-2 py-2 bg-white/10 rounded-lg hover:bg-green-500 transition">
+                        <i class="far fa-paper-plane text-xl"></i>
+                        Share
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+async function createReel() {
+    const fileInput = document.getElementById('reel-file');
+    const caption = document.getElementById('reel-caption').value;
+    
+    if (!fileInput.files[0]) {
+        alert('Please select a file');
+        return;
+    }
+
+    try {
+        // 1. First upload the file
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (!uploadResult.success) {
+            throw new Error('Upload failed');
+        }
+
+        // 2. Then create the reel with the data_url
+        const reelData = {
+            media_url: uploadResult.data_url,  // Use the returned data_url
+            caption: caption,
+            media_type: uploadResult.file_type  // 'image' or 'video'
+        };
+
+        const reelResponse = await fetch('/api/reels', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(reelData)
+        });
+
+        const result = await reelResponse.json();
+        
+        if (reelResponse.ok) {
+            alert('Reel created successfully!');
+            // Clear form
+            fileInput.value = '';
+            document.getElementById('reel-caption').value = '';
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error creating reel:', error);
+        alert('Failed to create reel');
+    }
+}
+
+   ‎async function quickPost() {
+‎    const content = document.getElementById('post-content').value.trim();
+‎    
+‎    if (!content) {
+‎        showToast('❌ Please write something!', 'error');
+‎        return;
+‎    }
+‎
+‎    try {
+‎        const response = await fetch(API_URL + '/api/posts', {
+‎            method: 'POST',
+‎            headers: {
+‎                'Content-Type': 'application/json',
+‎                'Authorization': `Bearer ${getToken()}`
+‎            },
+‎            body: JSON.stringify({
+‎                content: content,
+‎                image: null,
+‎                location: '',
+‎                taggedUsers: []
+‎            })
+‎        });
+‎
+‎        const result = await response.json();
+‎
+‎        if (response.ok) {
+‎            document.getElementById('post-content').value = '';
+‎            showToast('✅ Post created!', 'success');
+‎            await loadPosts();
+‎        } else {
+‎            showToast('❌ ' + (result.error || 'Failed to create post'), 'error');
+‎        }
+‎    } catch (error) {
+‎        console.error('Error creating post:', error);
+‎        showToast('❌ Error: ' + error.message, 'error');
+‎    }
+‎}
+
+   async function likePost(postId) {
+‎    try {
+‎        const response = await fetch(`${API_URL}/api/posts/${postId}/like`, {
+‎            method: 'POST',
+‎            headers: {
+‎                'Content-Type': 'application/json',
+‎                'Authorization': `Bearer ${getToken()}`
+‎            }
+‎        });
+‎
+‎        if (response.ok) {
+‎            const result = await response.json();
+‎            showToast('❤️ ' + result.message);
+‎            await loadPosts(); // Reload to show updated likes
+‎        } else {
+‎            const error = await response.json();
+‎            showToast('❌ ' + error.error, 'error');
+‎        }
+‎    } catch (error) {
+‎        console.error('Error liking post:', error);
+‎        showToast('❌ Error liking post', 'error');
+‎    }
+‎}
+
+    async function sharePost(postId) {
+        try {
+            await fetch(`${API_URL}/api/posts/${postId}/share`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+
+            const link = `${window.location.origin}/p/${postId}`;
+            navigator.clipboard.writeText(link);
+            showToast('📤 Link copied to clipboard!');
+        } catch (error) {
+            showToast('❌ Error sharing post', 'error');
+        }
+    }
+
+    function openCommentModal(postId) {
+‎    // Create modal dynamically
+‎    const modal = document.createElement('div');
+‎    modal.id = 'comment-modal';
+‎    modal.className = 'fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4';
+‎    modal.innerHTML = `
+‎        <div class="bg-gray-900 rounded-2xl w-full max-w-md">
+‎            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+‎                <h3 class="text-xl font-bold">Comments</h3>
+‎                <button onclick="closeCommentModal()" class="text-gray-400 hover:text-white">
+‎                    <i class="fas fa-times"></i>
+‎                </button>
+‎            </div>
+‎            <div id="comments-list" class="p-4 max-h-96 overflow-y-auto">
+‎                <p class="text-gray-400 text-center">Loading comments...</p>
+‎            </div>
+‎            <div class="p-4 border-t border-gray-800">
+‎                <div class="flex space-x-2">
+‎                    <input 
+‎                        type="text" 
+‎                        id="comment-input-${postId}"
+‎                        placeholder="Add a comment..."
+‎                        class="flex-1 bg-gray-800 rounded-full px-4 py-2 focus:outline-none"
+‎                    >
+‎                    <button onclick="postComment(${postId})" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-full">
+‎                        Post
+‎                    </button>
+‎                </div>
+‎            </div>
+‎        </div>
+‎    `;
+‎    document.body.appendChild(modal);
+‎    loadComments(postId);
+‎}
+‎
+‎function closeCommentModal() {
+‎    const modal = document.getElementById('comment-modal');
+‎    if (modal) modal.remove();
+‎}
+‎
+‎async function loadComments(postId) {
+‎    try {
+‎        const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+‎            headers: { 'Authorization': `Bearer ${getToken()}` }
+‎        });
+‎        const result = await response.json();
+‎        
+‎        const list = document.getElementById('comments-list');
+‎        if (result.comments.length === 0) {
+‎            list.innerHTML = '<p class="text-gray-400 text-center">No comments yet</p>';
+‎            return;
+‎        }
+‎        
+‎        list.innerHTML = result.comments.map(comment => `
+‎            <div class="mb-4">
+‎                <div class="flex items-start space-x-2">
+‎                    <span class="text-2xl">${comment.user.avatar}</span>
+‎                    <div>
+‎                        <p class="font-bold text-sm">${comment.user.username}</p>
+‎                        <p class="text-sm">${comment.content}</p>
+‎                    </div>
+‎                </div>
+‎            </div>
+‎        `).join('');
+‎    } catch (error) {
+‎        console.error('Error loading comments:', error);
+‎    }
+‎}
+‎
+‎async function postComment(postId) {
+‎    const input = document.getElementById(`comment-input-${postId}`);
+‎    const content = input.value.trim();
+‎    
+‎    if (!content) return;
+‎    
+‎    try {
+‎        const response = await fetch(`${API_URL}/api/posts/${postId}/comment`, {
+‎            method: 'POST',
+‎            headers: {
+‎                'Content-Type': 'application/json',
+‎                'Authorization': `Bearer ${getToken()}`
+‎            },
+‎            body: JSON.stringify({ content })
+‎        });
+‎        
+‎        if (response.ok) {
+‎            input.value = '';
+‎            await loadComments(postId);
+‎            showToast('💬 Comment added!');
+‎        }
+‎    } catch (error) {
+‎        console.error('Error posting comment:', error);
+‎    }
+‎}
+‎
+‎// Update the Comment button in renderPosts:
+‎// Change this:
+‎// <button class="...">Comment</button>
+‎// To this:
+‎// <button onclick="openCommentModal(${post.id})" class="...">Comment</button>
+
+    function startLiveActivity() {
+        const activities = [
+            '👤 New user joined Synapse',
+            '❤️ Someone liked your post',
+            '💬 New comment on your post',
+            '🔥 Trending: #Innovation',
+            '⚡ 50 users online now',
+            '🎯 Someone shared your post'
+        ];
+        
+        setInterval(() => {
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            const container = document.getElementById('live-activity');
+            container.innerHTML = `<div class="text-sm bg-white/5 p-2 rounded animate-pulse">${activity}</div>` + container.innerHTML.split('</div>')[0] + '</div>';
+        }, 5000);
+    }
+
+    function generateInviteCode() {
+        const code = 'SYNAPSE-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        document.getElementById('invite-code').textContent = code;
+    }
+
+    function copyInvite() {
+        const code = document.getElementById('invite-code').textContent;
+        navigator.clipboard.writeText(`Join Synapse with my invite code: ${code}\n${window.location.origin}/register`);
+        showToast('🎉 Invite link copied! Share it to earn 100 points!');
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+{% endblock %}

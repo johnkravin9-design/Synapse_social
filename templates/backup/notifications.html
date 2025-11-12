@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="md:hidden">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Notifications</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="markAllRead()" class="text-pink-400 hover:text-pink-300 text-sm font-bold">
+                    Mark all read
+                </button>
+                <button onclick="openSettings()" class="text-white hover:text-pink-400">
+                    <i class="fas fa-cog text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-2xl mx-auto px-4 py-6">
+        <!-- Filter Tabs -->
+        <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+            <button onclick="filterNotifications('all')" class="filter-btn active px-4 py-2 bg-pink-500 rounded-full text-sm font-bold whitespace-nowrap">
+                All
+            </button>
+            <button onclick="filterNotifications('likes')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                <i class="fas fa-heart mr-1"></i>Likes
+            </button>
+            <button onclick="filterNotifications('comments')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                <i class="fas fa-comment mr-1"></i>Comments
+            </button>
+            <button onclick="filterNotifications('follows')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                <i class="fas fa-user-plus mr-1"></i>Follows
+            </button>
+            <button onclick="filterNotifications('mentions')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                <i class="fas fa-at mr-1"></i>Mentions
+            </button>
+        </div>
+
+        <!-- Notifications List -->
+        <div id="notifications-container" class="space-y-2">
+            <!-- Loading -->
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
+                <p class="mt-4 text-gray-400">Loading notifications...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i class="fas fa-bell-slash text-6xl text-gray-600 mb-4"></i>
+            <p class="text-xl font-bold mb-2">No notifications yet</p>
+            <p class="text-gray-400">When someone interacts with your content, you'll see it here</p>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-gray-900">
+                <h2 class="text-xl font-bold">Notification Settings</h2>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-4 space-y-4">
+                <!-- Pause All -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold">Pause All</p>
+                        <p class="text-sm text-gray-400">Temporarily turn off notifications</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Likes -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-heart text-red-500 mr-2"></i>Likes</p>
+                        <p class="text-sm text-gray-400">When someone likes your post</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Comments -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-comment text-blue-500 mr-2"></i>Comments</p>
+                        <p class="text-sm text-gray-400">When someone comments on your post</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Follows -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-user-plus text-green-500 mr-2"></i>New Followers</p>
+                        <p class="text-sm text-gray-400">When someone follows you</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Mentions -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-at text-purple-500 mr-2"></i>Mentions</p>
+                        <p class="text-sm text-gray-400">When someone mentions you</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Messages -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-envelope text-yellow-500 mr-2"></i>Messages</p>
+                        <p class="text-sm text-gray-400">When you receive a message</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+
+                <!-- Live Video -->
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                    <div>
+                        <p class="font-bold"><i class="fas fa-video text-red-500 mr-2"></i>Live Videos</p>
+                        <p class="text-sm text-gray-400">When someone you follow goes live</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const socket = io(API_URL);
+        let notifications = [];
+        let currentFilter = 'all';
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load notifications on page load
+        window.addEventListener('load', async () => {
+            await loadNotifications();
+            setupSocketListeners();
+        });
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch(`${API_URL}/api/notifications`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                notifications = result.notifications;
+                renderNotifications();
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                document.getElementById('notifications-container').innerHTML = '<p class="text-center text-red-400 py-8">Error loading notifications</p>';
+            }
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notifications-container');
+            const emptyState = document.getElementById('empty-state');
+
+            // Filter notifications
+            let filtered = notifications;
+            if (currentFilter !== 'all') {
+                filtered = notifications.filter(n => {
+                    if (currentFilter === 'likes') return n.type === 'like';
+                    if (currentFilter === 'comments') return n.type === 'comment';
+                    if (currentFilter === 'follows') return n.type === 'follow';
+                    if (currentFilter === 'mentions') return n.type === 'mention';
+                    return true;
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            container.innerHTML = filtered.map(notif => {
+                const icon = getNotificationIcon(notif.type);
+                const color = getNotificationColor(notif.type);
+                
+                return `
+                    <div class="flex items-start space-x-3 p-4 rounded-lg hover:bg-white/5 transition ${!notif.is_read ? 'bg-white/5' : ''}">
+                        <div class="flex-shrink-0 w-12 h-12 ${color} rounded-full flex items-center justify-center">
+                            <i class="${icon} text-xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm ${!notif.is_read ? 'font-bold' : ''}">
+                                ${notif.content}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">${formatTime(notif.timestamp)}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${!notif.is_read ? '<span class="w-2 h-2 bg-pink-500 rounded-full"></span>' : ''}
+                            <button onclick="deleteNotification(${notif.id})" class="text-gray-400 hover:text-red-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add click handlers
+            container.querySelectorAll('[data-link]').forEach(el => {
+                el.addEventListener('click', () => {
+                    window.location.href = el.dataset.link;
+                });
+            });
+        }
+
+        function getNotificationIcon(type) {
+            switch(type) {
+                case 'like': return 'fas fa-heart';
+                case 'comment': return 'fas fa-comment';
+                case 'follow': return 'fas fa-user-plus';
+                case 'mention': return 'fas fa-at';
+                default: return 'fas fa-bell';
+            }
+        }
+
+        function getNotificationColor(type) {
+            switch(type) {
+                case 'like': return 'bg-red-500';
+                case 'comment': return 'bg-blue-500';
+                case 'follow': return 'bg-green-500';
+                case 'mention': return 'bg-purple-500';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        function filterNotifications(filter) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-pink-500');
+                btn.classList.add('bg-white/10');
+            });
+            
+            event.target.classList.add('active', 'bg-pink-500');
+            event.target.classList.remove('bg-white/10');
+            
+            renderNotifications();
+        }
+
+        async function markAllRead() {
+            try {
+                const response = await fetch(`${API_URL}/api/notifications/read-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (response.ok) {
+                    notifications = notifications.map(n => ({ ...n, is_read: true }));
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error marking all read:', error);
+            }
+        }
+
+        async function deleteNotification(notifId) {
+            notifications = notifications.filter(n => n.id !== notifId);
+            renderNotifications();
+        }
+
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function setupSocketListeners() {
+            socket.on('new_notification', (data) => {
+                // Add new notification to the beginning
+                notifications.unshift(data);
+                renderNotifications();
+                
+                // Show browser notification if supported
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Synapse', {
+                        body: data.content,
+                        icon: '/static/images/logo.png'
+                    });
+                }
+            });
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+            return date.toLocaleDateString();
+        }
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>

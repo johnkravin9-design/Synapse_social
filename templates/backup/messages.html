@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="md:hidden">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Messages</h1>
+            </div>
+            <button onclick="newMessage()" class="text-pink-400 hover:text-pink-300">
+                <i class="fas fa-pen-square text-2xl"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto h-[calc(100vh-64px)] flex">
+        <!-- Conversations List -->
+        <div class="w-full md:w-1/3 border-r border-purple-500 bg-black/20 flex flex-col">
+            <!-- Search -->
+            <div class="p-4 border-b border-purple-500">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        placeholder="Search messages..."
+                        class="w-full bg-white/10 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    >
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+
+            <!-- Conversations -->
+            <div id="conversations-list" class="flex-1 overflow-y-auto">
+                <!-- Loading -->
+                <div class="p-8 text-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
+                    <p class="mt-2 text-gray-400">Loading conversations...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chat-area" class="hidden md:flex flex-1 flex-col bg-black/10">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-purple-500 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span id="chat-avatar" class="text-3xl"></span>
+                    <div>
+                        <p id="chat-username" class="font-bold"></p>
+                        <p id="chat-status" class="text-xs text-green-400">
+                            <i class="fas fa-circle text-[8px]"></i> Active now
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-pink-400 hover:text-pink-300">
+                        <i class="fas fa-phone text-xl"></i>
+                    </button>
+                    <button class="text-pink-400 hover:text-pink-300">
+                        <i class="fas fa-video text-xl"></i>
+                    </button>
+                    <button onclick="openChatInfo()" class="text-pink-400 hover:text-pink-300">
+                        <i class="fas fa-info-circle text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Messages will be loaded here -->
+            </div>
+
+            <!-- Message Input -->
+            <div class="p-4 border-t border-purple-500">
+                <div class="flex items-center space-x-3">
+                    <button class="text-pink-400 hover:text-pink-300">
+                        <i class="fas fa-image text-2xl"></i>
+                    </button>
+                    <button class="text-pink-400 hover:text-pink-300">
+                        <i class="fas fa-heart text-2xl"></i>
+                    </button>
+                    <input 
+                        type="text" 
+                        id="message-input"
+                        placeholder="Type a message..."
+                        class="flex-1 bg-white/10 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button onclick="sendMessage()" class="bg-pink-500 hover:bg-pink-600 rounded-full p-2 w-10 h-10 flex items-center justify-center">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State (Mobile) -->
+        <div id="empty-state" class="flex-1 hidden md:flex items-center justify-center bg-black/10">
+            <div class="text-center">
+                <i class="fas fa-envelope text-6xl text-gray-600 mb-4"></i>
+                <h2 class="text-2xl font-bold mb-2">Your Messages</h2>
+                <p class="text-gray-400 mb-6">Send private messages to friends</p>
+                <button onclick="newMessage()" class="bg-pink-500 hover:bg-pink-600 px-6 py-3 rounded-full font-bold">
+                    Send Message
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Message Modal -->
+    <div id="new-message-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl max-w-md w-full">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">New Message</h2>
+                <button onclick="closeNewMessage()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4">
+                <div class="relative mb-4">
+                    <input 
+                        type="text" 
+                        id="user-search"
+                        placeholder="Search users..."
+                        class="w-full bg-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    >
+                </div>
+                
+                <div id="user-search-results" class="space-y-2 max-h-96 overflow-y-auto">
+                    <!-- Search results will appear here -->
+                    <p class="text-center text-gray-400 py-8">Search for users to start chatting</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Info Modal -->
+    <div id="chat-info-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 text-center border-b border-gray-800">
+                <span class="text-6xl mb-4 block">👤</span>
+                <h2 class="text-2xl font-bold mb-2">John Doe</h2>
+                <p class="text-gray-400">@johndoe</p>
+            </div>
+            
+            <div class="p-4 space-y-2">
+                <button class="w-full p-3 hover:bg-gray-800 rounded-lg text-left flex items-center space-x-3">
+                    <i class="fas fa-user-circle text-xl text-pink-400"></i>
+                    <span>View Profile</span>
+                </button>
+                <button class="w-full p-3 hover:bg-gray-800 rounded-lg text-left flex items-center space-x-3">
+                    <i class="fas fa-bell-slash text-xl text-yellow-400"></i>
+                    <span>Mute Conversation</span>
+                </button>
+                <button class="w-full p-3 hover:bg-gray-800 rounded-lg text-left flex items-center space-x-3">
+                    <i class="fas fa-trash text-xl text-red-400"></i>
+                    <span>Delete Conversation</span>
+                </button>
+                <button onclick="closeChatInfo()" class="w-full p-3 hover:bg-gray-800 rounded-lg text-left flex items-center space-x-3">
+                    <i class="fas fa-times text-xl text-gray-400"></i>
+                    <span>Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const socket = io(API_URL);
+        let conversations = [];
+        let currentChat = null;
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load conversations on page load
+        window.addEventListener('load', async () => {
+            await loadConversations();
+            setupSocketListeners();
+        });
+
+        async function loadConversations() {
+            try {
+                const response = await fetch(`${API_URL}/api/messages/conversations`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                conversations = result.conversations;
+                renderConversations();
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                document.getElementById('conversations-list').innerHTML = '<p class="p-4 text-center text-red-400">Error loading messages</p>';
+            }
+        }
+
+        function renderConversations() {
+            const container = document.getElementById('conversations-list');
+            
+            if (conversations.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center">
+                        <i class="fas fa-envelope text-6xl text-gray-600 mb-4"></i>
+                        <p class="text-gray-400">No messages yet</p>
+                        <button onclick="newMessage()" class="mt-4 bg-pink-500 px-4 py-2 rounded-full text-sm font-bold hover:bg-pink-600">
+                            Send First Message
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = conversations.map(conv => `
+                <div 
+                    onclick="openChat(${conv.user.id}, '${conv.user.username}', '${conv.user.avatar}', ${conv.user.is_online})"
+                    class="p-4 hover:bg-white/5 cursor-pointer transition border-b border-gray-800 ${conv.unread_count > 0 ? 'bg-white/5' : ''}"
+                >
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <span class="text-3xl">${conv.user.avatar}</span>
+                            ${conv.user.is_online ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></span>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <p class="font-bold truncate">${conv.user.username}</p>
+                                <p class="text-xs text-gray-400">${conv.last_message ? formatTime(conv.last_message.timestamp) : ''}</p>
+                            </div>
+                            <p class="text-sm text-gray-400 truncate ${conv.unread_count > 0 ? 'font-bold text-white' : ''}">
+                                ${conv.last_message ? conv.last_message.content : 'Start a conversation'}
+                            </p>
+                        </div>
+                        ${conv.unread_count > 0 ? `<span class="bg-pink-500 text-xs rounded-full w-5 h-5 flex items-center justify-center">${conv.unread_count}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openChat(userId, username, avatar, isOnline) {
+            currentChat = { id: userId, username, avatar, isOnline };
+            
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('chat-area').classList.remove('hidden');
+            document.getElementById('chat-area').classList.add('flex');
+            
+            document.getElementById('chat-avatar').textContent = avatar;
+            document.getElementById('chat-username').textContent = username;
+            document.getElementById('chat-status').innerHTML = isOnline 
+                ? '<i class="fas fa-circle text-[8px]"></i> Active now'
+                : 'Offline';
+            document.getElementById('chat-status').className = isOnline ? 'text-xs text-green-400' : 'text-xs text-gray-400';
+            
+            await loadMessages(userId);
+            
+            // Join user room for real-time updates
+            socket.emit('join', { user_id: currentUser.id });
+        }
+
+        async function loadMessages(userId) {
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                renderMessages(result.messages);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-container');
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">No messages yet. Say hi! 👋</p>';
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isMe = msg.sender_id === currentUser.id;
+                return `
+                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[70%] ${isMe ? 'bg-pink-500' : 'bg-gray-700'} rounded-2xl px-4 py-2">
+                            <p class="text-sm">${msg.content}</p>
+                            <p class="text-xs ${isMe ? 'text-pink-200' : 'text-gray-400'} mt-1">${formatTime(msg.timestamp)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            
+            if (!content || !currentChat) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${currentChat.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    input.value = '';
+                    await loadMessages(currentChat.id);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function setupSocketListeners() {
+            socket.on('new_message', (data) => {
+                if (currentChat && data.sender_id === currentChat.id) {
+                    loadMessages(currentChat.id);
+                }
+                loadConversations();
+            });
+
+            socket.on('user_status', (data) => {
+                if (currentChat && data.user_id === currentChat.id) {
+                    document.getElementById('chat-status').innerHTML = data.online 
+                        ? '<i class="fas fa-circle text-[8px]"></i> Active now'
+                        : 'Offline';
+                    document.getElementById('chat-status').className = data.online ? 'text-xs text-green-400' : 'text-xs text-gray-400';
+                }
+            });
+        }
+
+        function newMessage() {
+            document.getElementById('new-message-modal').classList.remove('hidden');
+        }
+
+        function closeNewMessage() {
+            document.getElementById('new-message-modal').classList.add('hidden');
+        }
+
+        function openChatInfo() {
+            document.getElementById('chat-info-modal').classList.remove('hidden');
+        }
+
+        function closeChatInfo() {
+            document.getElementById('chat-info-modal').classList.add('hidden');
+        }
+
+        // Search users for new message
+        let searchTimeout;
+        document.getElementById('user-search')?.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchUsers(e.target.value);
+            }, 500);
+        });
+
+        async function searchUsers(query) {
+            if (!query.trim()) {
+                document.getElementById('user-search-results').innerHTML = '<p class="text-center text-gray-400 py-8">Search for users to start chatting</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                renderUserSearchResults(result.users);
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        function renderUserSearchResults(users) {
+            const container = document.getElementById('user-search-results');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-4">No users found</p>';
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div 
+                    onclick="startNewChat(${user.id}, '${user.username}', '${user.avatar}')"
+                    class="flex items-center space-x-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer"
+                >
+                    <span class="text-3xl">${user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${user.username}</p>
+                        <p class="text-sm text-gray-400">${user.bio || 'Synapse user'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function startNewChat(userId, username, avatar) {
+            closeNewMessage();
+            openChat(userId, username, avatar, false);
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
+            return Math.floor(diff / 86400000) + 'd';
+        }
+    </script>
+</body>
+</html>

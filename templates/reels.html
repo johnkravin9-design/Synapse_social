@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reels - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .reel-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+        }
+        .reel-item {
+            scroll-snap-align: start;
+            height: 100vh;
+        }
+        .reel-container::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white overflow-hidden">
+    <!-- Top Navigation -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
+        <div class="flex items-center justify-between max-w-md mx-auto">
+            <a href="/feed" class="text-white hover:text-gray-300">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <h1 class="text-xl font-bold">Reels</h1>
+            <button onclick="openCamera()" class="text-white hover:text-gray-300">
+                <i class="fas fa-camera text-2xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Reels Container -->
+    <div id="reels-container" class="reel-container">
+        <!-- Reels will be loaded here -->
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 flex items-center justify-center bg-black">
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-6xl text-pink-500 mb-4"></i>
+            <p class="text-xl">Loading Reels...</p>
+        </div>
+    </div>
+
+    <!-- Create Reel Modal -->
+    <div id="create-reel-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
+        <div class="bg-gray-900 rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Create Reel</h2>
+                <button onclick="closeCreateReel()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="create-reel-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Title</label>
+                    <input 
+                        type="text" 
+                        id="reel-title"
+                        class="w-full bg-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        placeholder="Give your reel a title..."
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Video Emoji</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button type="button" onclick="selectReelEmoji('🎬')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎬</button>
+                        <button type="button" onclick="selectReelEmoji('🎥')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎥</button>
+                        <button type="button" onclick="selectReelEmoji('🎭')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎭</button>
+                        <button type="button" onclick="selectReelEmoji('🎪')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎪</button>
+                        <button type="button" onclick="selectReelEmoji('🎨')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎨</button>
+                        <button type="button" onclick="selectReelEmoji('🎯')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎯</button>
+                    </div>
+                    <input type="hidden" id="reel-emoji" value="🎬">
+                </div>
+                
+                <button 
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-pink-500 to-purple-500 py-3 rounded-lg font-bold hover:from-pink-600 hover:to-purple-600"
+                >
+                    Create Reel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div id="comments-modal" class="hidden fixed inset-0 bg-black/95 z-50">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Comments</h2>
+                <button onclick="closeComments()" class="text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <!-- Comments List -->
+            <div id="comments-list" class="flex-1 overflow-y-auto">
+                <!-- Comments will be loaded here -->
+            </div>
+            
+            <!-- Add Comment -->
+            <div class="p-4 border-t border-gray-800">
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="text" 
+                        id="comment-input"
+                        placeholder="Add a comment..."
+                        class="flex-1 bg-gray-800 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        onkeypress="if(event.key==='Enter') postComment()"
+                    >
+                    <button onclick="postComment()" class="bg-pink-500 hover:bg-pink-600 rounded-full p-2 transition">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const API_URL = 'http://localhost:5000';
+    let reels = [];
+    let currentReelIndex = 0;
+    let currentReelId = null;
+
+    function getToken() {
+        return localStorage.getItem('synapse_token');
+    }
+
+    // Load reels on page load
+    window.addEventListener('load', async () => {
+        await loadReels();
+    });
+
+    async function loadReels() {
+        try {
+            console.log('Loading reels...');
+            const response = await fetch(`${API_URL}/api/reels`, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Reels loaded:', result);
+            
+            reels = result.reels || [];
+            renderReels();
+            document.getElementById('loading').classList.add('hidden');
+        } catch (error) {
+            console.error('Error loading reels:', error);
+            document.getElementById('loading').innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+                    <p class="text-red-500 text-xl">Error loading reels</p>
+                    <p class="text-gray-400 mt-2">${error.message}</p>
+                    <button onclick="loadReels()" class="mt-4 bg-pink-500 px-6 py-3 rounded-full font-bold">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+
+function renderReels() {
+    const container = document.getElementById('reels-container');
+    console.log('Rendering reels:', reels);
+
+    if (reels.length === 0) {
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-screen">
+                <div class="text-center">
+                    <i class="fas fa-film text-6xl text-gray-600 mb-4"></i>
+                    <p class="text-xl text-gray-400">No reels yet</p>
+                    <button onclick="openCamera()" class="mt-4 bg-pink-500 px-6 py-3 rounded-full font-bold">
+                        Create First Reel
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = reels.map((reel, index) => {
+        // Determine if it's a video and create appropriate content
+        let mediaContent;
+        
+        if (reel.media_url && (reel.media_type === 'video' || reel.media_url.includes('video') || reel.media_url.startsWith('data:video'))) {
+            // It's a video - create video element
+            mediaContent = `
+                <video 
+                    src="${reel.media_url}" 
+                    class="w-full h-full object-cover"
+                    controls
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    onloadstart="console.log('Video loading:', this.src)"
+                    onerror="console.log('Video error:', this.error)"
+                >
+                    Your browser does not support the video tag.
+                </video>
+            `;
+        } else if (reel.media_url && reel.media_url.startsWith('data:image')) {
+            // It's an image - create img element
+            mediaContent = `<img src="${reel.media_url}" class="w-full h-full object-cover" alt="Reel" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'text-9xl\\'>🎬</div>'">`;
+        } else if (reel.media_url) {
+            // It's an emoji or other content
+            mediaContent = `<div class="text-9xl">${getEmojiFromUrl(reel.media_url)}</div>`;
+        } else {
+            // Fallback
+            mediaContent = `<div class="text-9xl">🎬</div>`;
+        }
+
+        return `
+            <div class="reel-item relative bg-black" data-index="${index}">
+                <!-- Video/Content Area -->
+                <div class="absolute inset-0 flex items-center justify-center bg-black">
+                    ${mediaContent}
+                </div>
+
+                <!-- Gradient Overlays -->
+                <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent"></div>
+                <div class="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/80 to-transparent"></div>
+
+                <!-- Content Info (Bottom Left) -->
+                <div class="absolute bottom-20 left-4 right-20 space-y-3">
+                    <!-- User Info -->
+                    <div class="flex items-center space-x-3">
+                        <span class="text-3xl">${reel.user?.avatar || '👤'}</span>
+                        <span class="font-bold">${reel.user?.username || 'User'}</span>
+                        <button class="bg-transparent border-2 border-white px-4 py-1 rounded-full text-sm font-bold hover:bg-white hover:text-black transition">
+                            Follow
+                        </button>
+                    </div>
+
+                    <!-- Reel Caption -->
+                    <p class="text-sm">${reel.caption || 'Check out this reel! 🎬'}</p>
+
+                    <!-- Audio Info -->
+                    <div class="flex items-center space-x-2 text-xs">
+                        <i class="fas fa-music"></i>
+                        <span>Original Audio - ${reel.user?.username || 'User'}</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons (Right Side) -->
+                <div class="absolute bottom-20 right-4 space-y-6">
+                    <!-- Like -->
+                    <button onclick="likeReel(${reel.id})" class="flex flex-col items-center space-y-1">
+                        <div class="w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-heart text-3xl hover:scale-110 transition"></i>
+                        </div>
+                        <span class="text-xs font-bold">${formatNumber(reel.likes_count || 0)}</span>
+                    </button>
+
+                    <!-- Comment -->
+                    <button onclick="openComments(${reel.id})" class="flex flex-col items-center space-y-1">
+                        <div class="w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-comment text-3xl hover:scale-110 transition"></i>
+                        </div>
+                        <span class="text-xs font-bold">${formatNumber(reel.comments_count || 0)}</span>
+                    </button>
+
+                    <!-- Share -->
+                    <button onclick="shareReel(${reel.id})" class="flex flex-col items-center space-y-1">
+                        <div class="w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-paper-plane text-3xl hover:scale-110 transition"></i>
+                        </div>
+                        <span class="text-xs font-bold">Share</span>
+                    </button>
+
+                    <!-- Sound Toggle (for videos) -->
+                    ${reel.media_type === 'video' ? `
+                    <button onclick="toggleSound(this, ${reel.id})" class="flex flex-col items-center space-y-1">
+                        <div class="w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-volume-mute text-3xl hover:scale-110 transition"></i>
+                        </div>
+                        <span class="text-xs font-bold">Sound</span>
+                    </button>
+                    ` : ''}
+
+                    <!-- More Options -->
+                    <button onclick="openReelOptions(${reel.id})" class="flex flex-col items-center space-y-1">
+                        <div class="w-12 h-12 flex items-center justify-center">
+                            <i class="fas fa-ellipsis-v text-2xl hover:scale-110 transition"></i>
+                        </div>
+                    </button>
+
+                    <!-- Profile Picture -->
+                    <div class="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
+                        <div class="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-pink-500 to-purple-500">
+                            ${reel.user?.avatar || '👤'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Auto-play the first video
+    setTimeout(() => {
+        const firstVideo = container.querySelector('video');
+        if (firstVideo) {
+            firstVideo.play().catch(e => {
+                console.log('Auto-play prevented:', e);
+                // Show play button overlay
+                showPlayButtonOverlay(firstVideo.parentElement);
+            });
+        }
+    }, 1000);
+}
+
+// Add these new functions for video controls
+function toggleSound(button, reelId) {
+    const reelElement = document.querySelector(`[data-index="${getCurrentReelIndex()}"]`);
+    const video = reelElement?.querySelector('video');
+    
+    if (video) {
+        if (video.muted) {
+            video.muted = false;
+            button.querySelector('i').className = 'fas fa-volume-up text-3xl hover:scale-110 transition';
+            showToast('🔊 Sound on');
+        } else {
+            video.muted = true;
+            button.querySelector('i').className = 'fas fa-volume-mute text-3xl hover:scale-110 transition';
+            showToast('🔇 Sound off');
+        }
+    }
+}
+
+function getCurrentReelIndex() {
+    // Simple implementation - you might want to track scroll position
+    const container = document.getElementById('reels-container');
+    const scrollTop = container.scrollTop;
+    const reelHeight = window.innerHeight;
+    return Math.floor(scrollTop / reelHeight);
+}
+
+function showPlayButtonOverlay(container) {
+    const overlay = document.createElement('div');
+    overlay.className = 'absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer';
+    overlay.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-play text-6xl text-white opacity-80"></i>
+            <p class="text-white mt-2">Tap to play</p>
+        </div>
+    `;
+    overlay.onclick = () => {
+        const video = container.querySelector('video');
+        if (video) {
+            video.play();
+            overlay.remove();
+        }
+    };
+    container.appendChild(overlay);
+}
+
+// Add scroll detection for auto-playing current reel
+function initScrollDetection() {
+    const container = document.getElementById('reels-container');
+    let isScrolling;
+    
+    container.addEventListener('scroll', () => {
+        // Clear previous timeout
+        window.clearTimeout(isScrolling);
+        
+        // Set new timeout
+        isScrolling = setTimeout(() => {
+            playCurrentReel();
+        }, 150);
+    });
+}
+
+function playCurrentReel() {
+    const currentIndex = getCurrentReelIndex();
+    const reelElement = document.querySelector(`[data-index="${currentIndex}"]`);
+    const video = reelElement?.querySelector('video');
+    
+    if (video) {
+        // Pause all other videos
+        document.querySelectorAll('video').forEach(v => {
+            if (v !== video) {
+                v.pause();
+                v.currentTime = 0;
+            }
+        });
+        
+        // Play current video
+        video.play().catch(e => {
+            console.log('Play failed:', e);
+        });
+    }
+}
+
+// Initialize scroll detection when page loads
+window.addEventListener('load', () => {
+    initScrollDetection();
+});
+
+    function getEmojiFromUrl(url) {
+        if (url.includes('🎬')) return '🎬';
+        if (url.includes('🎥')) return '🎥';
+        if (url.includes('🎭')) return '🎭';
+        if (url.includes('🎪')) return '🎪';
+        if (url.includes('🎨')) return '🎨';
+        if (url.includes('🎯')) return '🎯';
+        return '🎬';
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    function openCamera() {
+        document.getElementById('create-reel-modal').classList.remove('hidden');
+    }
+
+    function closeCreateReel() {
+        document.getElementById('create-reel-modal').classList.add('hidden');
+    }
+
+    function selectReelEmoji(emoji) {
+        document.getElementById('reel-emoji').value = emoji;
+        // Remove previous selections
+        document.querySelectorAll('button[onclick^="selectReelEmoji"]').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-pink-500');
+        });
+        // Add to current selection
+        event.target.classList.add('ring-2', 'ring-pink-500');
+    }
+
+    document.getElementById('create-reel-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById('reel-title').value;
+        const emoji = document.getElementById('reel-emoji').value;
+
+        try {
+            const response = await fetch(`${API_URL}/api/reels`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify({
+                    media_url: emoji,
+                    caption: title,
+                    media_type: 'emoji'
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showToast('✅ Reel created successfully!');
+                closeCreateReel();
+                await loadReels(); // Reload to show the new reel
+            } else {
+                showToast('❌ ' + result.error, 'error');
+            }
+        } catch (error) {
+            showToast('❌ Error creating reel: ' + error.message, 'error');
+        }
+    });
+
+    async function likeReel(reelId) {
+        try {
+            const response = await fetch(`${API_URL}/api/reels/${reelId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+
+            if (response.ok) {
+                // Update the likes count in the UI
+                const reel = reels.find(r => r.id === reelId);
+                if (reel) {
+                    reel.likes_count = (reel.likes_count || 0) + 1;
+                    renderReels();
+                }
+                showToast('❤️ Liked!');
+            }
+        } catch (error) {
+            showToast('❌ Error: ' + error.message, 'error');
+        }
+    }
+
+    function openComments(reelId) {
+        document.getElementById('comments-modal').classList.remove('hidden');
+        currentReelId = reelId;
+        loadReelComments(reelId);
+    }
+
+    async function loadReelComments(reelId) {
+        try {
+            const response = await fetch(`${API_URL}/api/reels/${reelId}/comments`, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            renderComments(result.comments || []);
+        } catch (error) {
+            console.error('Error loading comments:', error);
+            renderComments([]);
+        }
+    }
+
+    function renderComments(comments) {
+        const container = document.getElementById('comments-list');
+        if (comments.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-center py-8">No comments yet. Be the first!</p>';
+            return;
+        }
+
+        container.innerHTML = comments.map(comment => `
+            <div class="flex items-start space-x-3 p-4 border-b border-gray-800">
+                <span class="text-3xl">${comment.user?.avatar || '👤'}</span>
+                <div class="flex-1">
+                    <p class="text-sm">
+                        <span class="font-bold">${comment.user?.username || 'User'}</span>
+                        ${comment.text || comment.content}
+                    </p>
+                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-400">
+                        <span>${comment.timestamp || 'Just now'}</span>
+                        <button onclick="likeComment(${comment.id})" class="hover:text-white">
+                            ${comment.likes || 0} likes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function postComment() {
+        const input = document.getElementById('comment-input');
+        const content = input.value.trim();
+
+        if (!content || !currentReelId) return;
+
+        try {
+            const response = await fetch(`${API_URL}/api/reels/${currentReelId}/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify({ text: content })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                input.value = '';
+                await loadReelComments(currentReelId);
+                showToast('💬 Comment added!');
+            } else {
+                showToast('❌ ' + result.error, 'error');
+            }
+        } catch (error) {
+            showToast('❌ Error: ' + error.message, 'error');
+        }
+    }
+
+    async function shareReel(reelId) {
+        try {
+            const response = await fetch(`${API_URL}/api/reels/${reelId}/share`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Copy link to clipboard
+                const link = `${window.location.origin}/reels?id=${reelId}`;
+                navigator.clipboard.writeText(link).then(() => {
+                    showToast('📤 Link copied to clipboard!');
+                }).catch(() => {
+                    showToast('📤 Share this link: ' + link);
+                });
+            } else {
+                showToast('❌ ' + result.error, 'error');
+            }
+        } catch (error) {
+            showToast('❌ Error: ' + error.message, 'error');
+        }
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function closeComments() {
+        document.getElementById('comments-modal').classList.add('hidden');
+    }
+
+    function openReelOptions(reelId) {
+        alert('⚙️ Options: Save, Report, Not Interested');
+    }
+</script>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Post - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="text-white hover:text-pink-400">
+                    <i class="fas fa-times text-2xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Create Post</h1>
+            </div>
+            <button onclick="publishPost()" class="bg-pink-500 hover:bg-pink-600 px-6 py-2 rounded-lg font-bold transition disabled:opacity-50 disabled:cursor-not-allowed" id="publish-btn">
+                Share
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Create Type Selection -->
+        <div class="mb-6">
+            <div class="grid grid-cols-3 gap-4">
+                <button onclick="selectType('post')" class="type-btn active bg-pink-500 hover:bg-pink-600 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-image text-2xl mb-2"></i>
+                    <p>Post</p>
+                </button>
+                <button onclick="selectType('story')" class="type-btn bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-circle-notch text-2xl mb-2"></i>
+                    <p>Story</p>
+                </button>
+                <button onclick="selectType('reel')" class="type-btn bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition">
+                    <i class="fas fa-film text-2xl mb-2"></i>
+                    <p>Reel</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Post Creator -->
+        <div id="post-creator" class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500">
+            <!-- User Info -->
+            <div class="flex items-center space-x-3 mb-6">
+                <span id="user-avatar" class="text-4xl">🚀</span>
+                <div>
+                    <p id="user-name" class="font-bold">Username</p>
+                    <p class="text-sm text-gray-400">Share with followers</p>
+                </div>
+            </div>
+
+            <!-- Image/Media Selection -->
+            <div class="mb-6">
+                <div id="media-preview" class="hidden bg-black/40 rounded-xl p-8 mb-4 text-center">
+                    <div id="preview-content" class="text-9xl"></div>
+                    <button onclick="removeMedia()" class="mt-4 text-red-400 hover:text-red-300 text-sm">
+                        <i class="fas fa-times mr-1"></i>Remove
+                    </button>
+                </div>
+
+                <button onclick="selectMedia()" class="w-full border-2 border-dashed border-gray-600 hover:border-pink-500 rounded-xl py-12 transition">
+                    <i class="fas fa-cloud-upload-alt text-6xl text-gray-600 mb-4"></i>
+                    <p class="text-lg font-bold">Click to add photos or videos</p>
+                    <p class="text-sm text-gray-400 mt-2">Drag and drop or browse files</p>
+                </button>
+
+                <!-- Emoji Grid -->
+                <div id="emoji-grid" class="hidden mt-4 grid grid-cols-8 gap-2">
+                    <button onclick="selectEmoji('🌟')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🌟</button>
+                    <button onclick="selectEmoji('🎨')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎨</button>
+                    <button onclick="selectEmoji('🚀')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🚀</button>
+                    <button onclick="selectEmoji('💡')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">💡</button>
+                    <button onclick="selectEmoji('🔥')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🔥</button>
+                    <button onclick="selectEmoji('⚡')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">⚡</button>
+                    <button onclick="selectEmoji('🎯')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎯</button>
+                    <button onclick="selectEmoji('💪')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">💪</button>
+                    <button onclick="selectEmoji('🌈')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🌈</button>
+                    <button onclick="selectEmoji('✨')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">✨</button>
+                    <button onclick="selectEmoji('🎉')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎉</button>
+                    <button onclick="selectEmoji('🎪')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎪</button>
+                    <button onclick="selectEmoji('🎭')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎭</button>
+                    <button onclick="selectEmoji('🎬')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎬</button>
+                    <button onclick="selectEmoji('🎥')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">🎥</button>
+                    <button onclick="selectEmoji('📸')" class="text-4xl p-2 bg-white/5 rounded-lg hover:bg-pink-500 transition">📸</button>
+                </div>
+            </div>
+
+            <!-- Caption -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Caption</label>
+                <textarea 
+                    id="caption"
+                    rows="4"
+                    class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                    placeholder="Write a caption..."
+                    maxlength="2200"
+                ></textarea>
+                <p class="text-xs text-gray-400 mt-1"><span id="caption-count">0</span>/2,200</p>
+            </div>
+
+            <!-- Location -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Add Location
+                </label>
+                <input 
+                    type="text" 
+                    id="location"
+                    class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="Search location..."
+                >
+            </div>
+
+            <!-- Tag People -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">
+                    <i class="fas fa-user-tag mr-2"></i>Tag People
+                </label>
+                <div class="flex items-center space-x-2">
+                    <input 
+                        type="text" 
+                        id="tag-input"
+                        class="flex-1 bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        placeholder="Search users..."
+                    >
+                    <button onclick="openTagModal()" class="bg-pink-500 hover:bg-pink-600 px-4 py-3 rounded-lg transition">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="tagged-users" class="flex flex-wrap gap-2 mt-3">
+                    <!-- Tagged users will appear here -->
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+            <div class="border-t border-gray-700 pt-6 space-y-3">
+                <button onclick="toggleOption('comments')" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-comment mr-3"></i>Turn off commenting</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="allow-comments" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </button>
+
+                <button onclick="toggleOption('sharing')" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-share mr-3"></i>Hide like and view counts</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="hide-counts" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </button>
+
+                <button onclick="openFilters()" class="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition">
+                    <span><i class="fas fa-magic mr-3"></i>Add Filter</span>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Save as Draft -->
+        <button onclick="saveDraft()" class="w-full mt-4 bg-white/10 hover:bg-white/20 py-4 rounded-lg font-bold transition">
+            <i class="fas fa-save mr-2"></i>Save as Draft
+        </button>
+    </div>
+
+    <!-- Tag Users Modal -->
+    <div id="tag-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Tag People</h2>
+                <button onclick="closeTagModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 border-b border-gray-800">
+                <input 
+                    type="text" 
+                    id="search-users"
+                    placeholder="Search users..."
+                    class="w-full bg-gray-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+            </div>
+
+            <div id="users-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Users will be loaded here -->
+                <p class="text-center text-gray-400 py-8">Search for users to tag</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Modal -->
+    <div id="filters-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-2xl">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 class="text-xl font-bold">Choose Filter</h2>
+                <button onclick="closeFilters()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 grid grid-cols-3 gap-4">
+                <button onclick="applyFilter('normal')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">📷</div>
+                    <p class="text-sm">Normal</p>
+                </button>
+                <button onclick="applyFilter('vintage')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">🎞️</div>
+                    <p class="text-sm">Vintage</p>
+                </button>
+                <button onclick="applyFilter('bw')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">⚫</div>
+                    <p class="text-sm">B&W</p>
+                </button>
+                <button onclick="applyFilter('warm')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">🌅</div>
+                    <p class="text-sm">Warm</p>
+                </button>
+                <button onclick="applyFilter('cool')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">❄️</div>
+                    <p class="text-sm">Cool</p>
+                </button>
+                <button onclick="applyFilter('bright')" class="filter-option p-4 bg-white/5 hover:bg-white/10 rounded-lg transition">
+                    <div class="text-6xl mb-2">☀️</div>
+                    <p class="text-sm">Bright</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        let selectedMedia = null;
+        let taggedUsers = [];
+        let postType = 'post';
+        let selectedFilter = 'normal';
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load user data
+        window.addEventListener('load', () => {
+            if (currentUser) {
+                document.getElementById('user-avatar').textContent = currentUser.avatar;
+                document.getElementById('user-name').textContent = currentUser.username;
+            }
+        });
+
+        // Caption character count
+        document.getElementById('caption').addEventListener('input', () => {
+            const count = document.getElementById('caption').value.length;
+            document.getElementById('caption-count').textContent = count;
+        });
+
+        function selectType(type) {
+            postType = type;
+            
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-pink-500');
+                btn.classList.add('bg-white/10');
+            });
+            
+            event.target.classList.add('active', 'bg-pink-500');
+            event.target.classList.remove('bg-white/10');
+
+            if (type === 'story') {
+                alert('📸 Stories disappear after 24 hours!');
+            } else if (type === 'reel') {
+                alert('🎬 Reels are short videos!');
+            }
+        }
+
+        function selectMedia() {
+            document.getElementById('emoji-grid').classList.remove('hidden');
+        }
+
+        function selectEmoji(emoji) {
+            selectedMedia = emoji;
+            document.getElementById('preview-content').textContent = emoji;
+            document.getElementById('media-preview').classList.remove('hidden');
+            document.getElementById('emoji-grid').classList.add('hidden');
+        }
+
+        function removeMedia() {
+            selectedMedia = null;
+            document.getElementById('media-preview').classList.add('hidden');
+            document.getElementById('preview-content').textContent = '';
+        }
+
+        function openTagModal() {
+            document.getElementById('tag-modal').classList.remove('hidden');
+        }
+
+        function closeTagModal() {
+            document.getElementById('tag-modal').classList.add('hidden');
+        }
+
+        function openFilters() {
+            document.getElementById('filters-modal').classList.remove('hidden');
+        }
+
+        function closeFilters() {
+            document.getElementById('filters-modal').classList.add('hidden');
+        }
+
+        function applyFilter(filter) {
+            selectedFilter = filter;
+            alert(`✨ ${filter.charAt(0).toUpperCase() + filter.slice(1)} filter applied!`);
+            closeFilters();
+        }
+
+        function toggleOption(option) {
+            // Options are handled by checkboxes
+        }
+
+        async function publishPost() {
+            const caption = document.getElementById('caption').value;
+            const location = document.getElementById('location').value;
+
+            if (!selectedMedia && !caption) {
+                alert('❌ Please add an image or caption');
+                return;
+            }
+
+            const publishBtn = document.getElementById('publish-btn');
+            publishBtn.disabled = true;
+            publishBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sharing...';
+
+            try {
+                let endpoint = '/api/posts';
+                let data = {
+                    content: caption,
+                    image: selectedMedia,
+                    location: location,
+                    taggedUsers: taggedUsers
+                };
+
+                if (postType === 'story') {
+                    endpoint = '/api/stories';
+                    data = {
+                        content: caption,
+                        emoji: selectedMedia
+                    };
+                } else if (postType === 'reel') {
+                    endpoint = '/api/reels';
+                    data = {
+                        title: caption,
+                        thumbnail: selectedMedia
+                    };
+                }
+
+                const response = await fetch(API_URL + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ ' + result.message);
+                    window.location.href = '/feed';
+                } else {
+                    alert('❌ ' + result.error);
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = 'Share';
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+                publishBtn.disabled = false;
+                publishBtn.textContent = 'Share';
+            }
+        }
+
+        function saveDraft() {
+            const draft = {
+                type: postType,
+                caption: document.getElementById('caption').value,
+                media: selectedMedia,
+                location: document.getElementById('location').value,
+                taggedUsers: taggedUsers,
+                timestamp: new Date().toISOString()
+            };
+
+            localStorage.setItem('synapse_draft', JSON.stringify(draft));
+            alert('💾 Draft saved! You can continue later.');
+            window.location.href = '/feed';
+        }
+
+        // Load draft if exists
+        const draft = localStorage.getItem('synapse_draft');
+        if (draft) {
+            const draftData = JSON.parse(draft);
+            if (confirm('📝 You have a saved draft. Would you like to continue?')) {
+                document.getElementById('caption').value = draftData.caption || '';
+                document.getElementById('location').value = draftData.location || '';
+                if (draftData.media) {
+                    selectEmoji(draftData.media);
+                }
+                taggedUsers = draftData.taggedUsers || [];
+            }
+        }
+    </script>
+</body>
+</html>

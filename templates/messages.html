@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.3), 0 0 40px rgba(168, 85, 247, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.5), 0 0 60px rgba(168, 85, 247, 0.4); }
+        }
+        
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(236, 72, 153, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.8); }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+        
+        .conversation-item {
+            animation: fadeSlideUp 0.5s ease-out;
+            animation-fill-mode: both;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .conversation-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(10px) scale(1.02);
+            animation: glow 2s infinite;
+        }
+        
+        .message-bubble {
+            animation: fadeSlideUp 0.4s ease-out;
+            backdrop-filter: blur(10px);
+        }
+        
+        .message-input:focus {
+            animation: pulse-glow 2s infinite;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+        }
+        
+        .send-button:active {
+            transform: scale(0.95);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .online-pulse {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        .chat-container {
+            scroll-behavior: smooth;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .message-seen {
+            color: #10B981;
+            font-size: 10px;
+        }
+
+        .message-sending {
+            opacity: 0.7;
+        }
+
+        /* Scrollbar styling */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #EC4899, #8B5CF6);
+            border-radius: 10px;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .message-bubble {
+                max-width: 85% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white overflow-hidden">
+    
+    <!-- Conversations View (Inbox) -->
+    <div id="conversations-view" class="h-screen flex flex-col">
+        <!-- Header -->
+        <div class="glass-effect border-b border-purple-500/30 p-4 backdrop-blur-xl">
+            <div class="max-w-6xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <a href="/feed" class="text-white/80 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                        Messages
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="refreshConversations()" class="glass-effect p-2 rounded-full hover:bg-white/10 transition">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button onclick="openNewMessage()" class="glass-effect px-4 py-2 rounded-full hover:bg-white/10 transition">
+                        <i class="fas fa-pen mr-2"></i>New Message
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="p-4 max-w-6xl mx-auto w-full">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    placeholder="Search conversations..."
+                    class="w-full glass-effect rounded-full px-6 py-3 pl-12 focus:outline-none transition message-input"
+                    id="search-conversations"
+                    oninput="filterConversations(this.value)"
+                >
+                <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+            </div>
+        </div>
+        
+        <!-- Conversations List -->
+        <div id="conversations-list" class="flex-1 overflow-y-auto px-4 space-y-2 max-w-6xl mx-auto w-full">
+            <!-- Loading state -->
+            <div class="flex items-center justify-center py-20">
+                <div class="text-center">
+                    <i class="fas fa-comment-dots text-6xl text-pink-500/50 mb-4 animate-pulse"></i>
+                    <p class="text-gray-400">Loading conversations...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat View (Direct Message) -->
+    <div id="chat-view" class="hidden h-screen flex flex-col">
+        <!-- Chat Header -->
+        <div class="glass-effect border-b border-purple-500/30 p-4 backdrop-blur-xl">
+            <div class="max-w-4xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="backToConversations()" class="text-white/80 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div class="relative">
+                        <span id="chat-avatar" class="text-4xl">👤</span>
+                        <span id="online-indicator" class="hidden absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 online-pulse"></span>
+                    </div>
+                    <div>
+                        <h2 id="chat-username" class="text-xl font-bold">Username</h2>
+                        <p id="chat-status" class="text-sm text-gray-400">Offline</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="startVoiceCall()" class="glass-effect p-3 rounded-full hover:bg-white/10 transition">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button onclick="startVideoCall()" class="glass-effect p-3 rounded-full hover:bg-white/10 transition">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button onclick="showChatInfo()" class="glass-effect p-3 rounded-full hover:bg-white/10 transition">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages Container -->
+        <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 max-w-4xl mx-auto w-full chat-container">
+            <!-- Messages will be loaded here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" class="hidden px-6 max-w-4xl mx-auto w-full">
+            <div class="flex justify-start">
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <span class="text-xs text-gray-400 ml-2">typing...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Message Input -->
+        <div class="glass-effect border-t border-purple-500/30 p-4 backdrop-blur-xl">
+            <div class="max-w-4xl mx-auto flex items-center space-x-3">
+                <button onclick="toggleAttachmentMenu()" class="glass-effect p-3 rounded-full hover:bg-white/10 transition">
+                    <i class="fas fa-plus text-xl"></i>
+                </button>
+                <button onclick="openImagePicker()" class="glass-effect p-3 rounded-full hover:bg-white/10 transition">
+                    <i class="fas fa-image text-xl"></i>
+                </button>
+                <input 
+                    type="text" 
+                    id="message-input"
+                    placeholder="Type a message..."
+                    class="flex-1 glass-effect rounded-full px-6 py-3 focus:outline-none transition message-input"
+                    onkeypress="handleKeyPress(event)"
+                    oninput="handleTyping()"
+                >
+                <button onclick="sendMessage()" class="send-button bg-gradient-to-r from-pink-500 to-purple-500 p-4 rounded-full hover:from-pink-600 hover:to-purple-600 transition transform hover:scale-110 active:scale-95">
+                    <i class="fas fa-rocket text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Message Modal -->
+    <div id="new-message-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-effect rounded-2xl max-w-md w-full border border-purple-500/30 animate-fadeSlideUp">
+            <div class="p-6 border-b border-purple-500/30">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">New Message</h2>
+                    <button onclick="closeNewMessage()" class="text-gray-400 hover:text-white transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <input 
+                    type="text" 
+                    id="user-search"
+                    placeholder="Search users..."
+                    class="w-full glass-effect rounded-lg px-4 py-3 focus:outline-none message-input"
+                    oninput="searchUsers(this.value)"
+                >
+            </div>
+            <div id="user-search-results" class="p-4 max-h-96 overflow-y-auto">
+                <p class="text-center text-gray-400 py-8">Search for users to start chatting</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachment Menu -->
+    <div id="attachment-menu" class="hidden fixed bottom-20 left-4 glass-effect rounded-2xl p-4 border border-purple-500/30 backdrop-blur-xl z-40">
+        <div class="space-y-2">
+            <button onclick="openImagePicker()" class="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-white/10 transition">
+                <i class="fas fa-image text-pink-400"></i>
+                <span>Photo & Video</span>
+            </button>
+            <button onclick="openFilePicker()" class="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-white/10 transition">
+                <i class="fas fa-file text-blue-400"></i>
+                <span>Document</span>
+            </button>
+            <button onclick="openCamera()" class="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-white/10 transition">
+                <i class="fas fa-camera text-green-400"></i>
+                <span>Camera</span>
+            </button>
+            <button onclick="shareLocation()" class="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-white/10 transition">
+                <i class="fas fa-location-dot text-yellow-400"></i>
+                <span>Location</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-preview-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="glass-effect rounded-2xl max-w-2xl w-full">
+            <div class="p-4 border-b border-purple-500/30 flex justify-between items-center">
+                <h3 class="text-lg font-bold">Send Image</h3>
+                <button onclick="closeImagePreview()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <img id="image-preview" class="w-full h-64 object-cover rounded-lg mb-4">
+                <input type="file" id="image-input" accept="image/*" class="hidden" onchange="previewImage(this)">
+                <div class="flex space-x-3">
+                    <button onclick="document.getElementById('image-input').click()" class="flex-1 glass-effect py-2 rounded-lg hover:bg-white/10">
+                        Choose Different
+                    </button>
+                    <button onclick="sendImage()" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 py-2 rounded-lg hover:from-pink-600 hover:to-purple-600">
+                        Send Image
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const socket = io(API_URL);
+        let conversations = [];
+        let currentChat = null;
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        let typingTimeout;
+        let isTyping = false;
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Check if logged in
+        if (!getToken()) {
+            window.location.href = '/login';
+        }
+
+        // Load conversations on page load
+        window.addEventListener('load', async () => {
+            await loadConversations();
+            setupSocketListeners();
+            
+            // Check if opening specific chat from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const username = urlParams.get('user');
+            if (username) {
+                const user = await getUserByUsername(username);
+                if (user) {
+                    openChat(user.id, user.username, user.avatar, user.is_online);
+                }
+            }
+        });
+
+        async function loadConversations() {
+            try {
+                showLoadingState();
+                const response = await fetch(API_URL + '/api/messages/conversations', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await response.json();
+                conversations = result.conversations || [];
+                renderConversations();
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+                showErrorState('Error loading conversations');
+            }
+        }
+
+        function showLoadingState() {
+            document.getElementById('conversations-list').innerHTML = `
+                <div class="flex items-center justify-center py-20">
+                    <div class="text-center">
+                        <i class="fas fa-comment-dots text-6xl text-pink-500/50 mb-4 animate-pulse"></i>
+                        <p class="text-gray-400">Loading conversations...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showErrorState(message) {
+            document.getElementById('conversations-list').innerHTML = `
+                <div class="text-center py-20">
+                    <i class="fas fa-exclamation-circle text-6xl text-red-500/50 mb-4"></i>
+                    <p class="text-red-400">${message}</p>
+                    <button onclick="loadConversations()" class="mt-4 glass-effect px-4 py-2 rounded-lg hover:bg-white/10">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderConversations() {
+            const container = document.getElementById('conversations-list');
+            
+            if (conversations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20">
+                        <i class="fas fa-envelope text-8xl text-gray-600/50 mb-6"></i>
+                        <h3 class="text-2xl font-bold mb-2">No messages yet</h3>
+                        <p class="text-gray-400 mb-6">Start a conversation with your friends</p>
+                        <button onclick="openNewMessage()" class="bg-gradient-to-r from-pink-500 to-purple-500 px-6 py-3 rounded-full font-bold hover:from-pink-600 hover:to-purple-600 transition">
+                            Send First Message
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = conversations.map((conv, index) => `
+                <div 
+                    onclick="openChat(${conv.user.id}, '${conv.user.username}', '${conv.user.avatar}', ${conv.user.is_online})"
+                    class="conversation-item rounded-2xl p-4 cursor-pointer border border-purple-500/20 hover:border-pink-500/50"
+                    style="animation-delay: ${index * 0.1}s"
+                >
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <span class="text-5xl">${conv.user.avatar}</span>
+                            ${conv.user.is_online ? '<span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900 online-pulse"></span>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <h3 class="text-lg font-bold truncate">${conv.user.username}</h3>
+                                <span class="text-xs text-gray-400">${conv.last_message ? formatTime(conv.last_message.timestamp) : ''}</span>
+                            </div>
+                            <p class="text-sm text-gray-400 truncate ${conv.unread_count > 0 ? 'font-semibold text-white' : ''}">
+                                ${conv.last_message ? conv.last_message.content : 'Start a conversation'}
+                            </p>
+                        </div>
+                        ${conv.unread_count > 0 ? `
+                            <span class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                                ${conv.unread_count}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterConversations(query) {
+            const filtered = conversations.filter(conv => 
+                conv.user.username.toLowerCase().includes(query.toLowerCase()) ||
+                (conv.last_message && conv.last_message.content.toLowerCase().includes(query.toLowerCase()))
+            );
+            
+            const container = document.getElementById('conversations-list');
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">No conversations found</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map((conv, index) => `
+                <div 
+                    onclick="openChat(${conv.user.id}, '${conv.user.username}', '${conv.user.avatar}', ${conv.user.is_online})"
+                    class="conversation-item rounded-2xl p-4 cursor-pointer border border-purple-500/20 hover:border-pink-500/50"
+                >
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <span class="text-5xl">${conv.user.avatar}</span>
+                            ${conv.user.is_online ? '<span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900 online-pulse"></span>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-bold truncate">${conv.user.username}</h3>
+                            <p class="text-sm text-gray-400 truncate">${conv.last_message ? conv.last_message.content : 'Start a conversation'}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openChat(userId, username, avatar, isOnline) {
+            currentChat = { id: userId, username, avatar, isOnline };
+            
+            // Switch views
+            document.getElementById('conversations-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            
+            // Update header
+            document.getElementById('chat-avatar').textContent = avatar;
+            document.getElementById('chat-username').textContent = username;
+            document.getElementById('chat-status').textContent = isOnline ? 'Online' : 'Offline';
+            document.getElementById('chat-status').className = isOnline ? 'text-sm text-green-400' : 'text-sm text-gray-400';
+            
+            if (isOnline) {
+                document.getElementById('online-indicator').classList.remove('hidden');
+            } else {
+                document.getElementById('online-indicator').classList.add('hidden');
+            }
+            
+            // Load messages
+            await loadMessages(userId);
+            
+            // Join room for real-time updates
+            socket.emit('join', { user_id: currentUser.id });
+        }
+
+        function backToConversations() {
+            document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('conversations-view').classList.remove('hidden');
+            currentChat = null;
+            stopTyping();
+        }
+
+        async function loadMessages(userId) {
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const result = await response.json();
+                renderMessages(result.messages || []);
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showMessageError();
+            }
+        }
+
+        function showMessageError() {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <i class="fas fa-exclamation-triangle text-6xl text-red-500/50 mb-4"></i>
+                    <p class="text-red-400">Error loading messages</p>
+                    <button onclick="loadMessages(currentChat.id)" class="mt-4 glass-effect px-4 py-2 rounded-lg hover:bg-white/10">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messages-container');
+            
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20">
+                        <i class="fas fa-comments text-6xl text-gray-600/50 mb-4"></i>
+                        <p class="text-gray-400">No messages yet. Say hi! 👋</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = messages.map((msg, index) => {
+                const isMe = msg.sender_id === currentUser.id;
+                const showTimestamp = index === 0 || 
+                    new Date(msg.timestamp) - new Date(messages[index-1].timestamp) > 300000; // 5 minutes
+                
+                return `
+                    ${showTimestamp ? `
+                        <div class="text-center my-4">
+                            <span class="glass-effect px-3 py-1 rounded-full text-xs text-gray-400">
+                                ${formatDate(msg.timestamp)}
+                            </span>
+                        </div>
+                    ` : ''}
+                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'}" style="animation-delay: ${index * 0.05}s">
+                        <div class="message-bubble max-w-[70%] ${
+                            isMe 
+                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl rounded-br-none' 
+                                : 'glass-effect border border-purple-500/30 rounded-2xl rounded-bl-none'
+                        } px-4 py-3 ${msg.is_read && isMe ? 'message-seen' : ''}">
+                            <p class="text-sm break-words">${msg.content}</p>
+                            <div class="flex items-center justify-end space-x-1 mt-1">
+                                <span class="text-xs ${isMe ? 'text-pink-200' : 'text-gray-400'}">
+                                    ${formatTime(msg.timestamp)}
+                                </span>
+                                ${isMe && msg.is_read ? `
+                                    <i class="fas fa-check-double text-green-400 text-xs"></i>
+                                ` : isMe ? `
+                                    <i class="fas fa-check text-gray-400 text-xs"></i>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            
+            if (!content || !currentChat) return;
+
+            // Add temporary message to UI
+            addTemporaryMessage(content);
+            input.value = '';
+            stopTyping();
+
+            try {
+                const response = await fetch(`${API_URL}/api/messages/${currentChat.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    // Message will be updated via socket
+                    await loadMessages(currentChat.id);
+                } else {
+                    removeTemporaryMessage();
+                    alert('Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                removeTemporaryMessage();
+                alert('Error sending message');
+            }
+        }
+
+        function addTemporaryMessage(content) {
+            const container = document.getElementById('messages-container');
+            const tempMessage = document.createElement('div');
+            tempMessage.id = 'temp-message';
+            tempMessage.className = 'flex justify-end message-sending';
+            tempMessage.innerHTML = `
+                <div class="message-bubble max-w-[70%] bg-gradient-to-r from-pink-500 to-purple-500 rounded-2xl rounded-br-none px-4 py-3 opacity-70">
+                    <p class="text-sm break-words">${content}</p>
+                    <div class="flex justify-end mt-1">
+                        <i class="fas fa-clock text-pink-200 text-xs"></i>
+                    </div>
+                </div>
+            `;
+            container.appendChild(tempMessage);
+            scrollToBottom();
+        }
+
+        function removeTemporaryMessage() {
+            const tempMessage = document.getElementById('temp-message');
+            if (tempMessage) {
+                tempMessage.remove();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function handleTyping() {
+            if (!isTyping) {
+                isTyping = true;
+                socket.emit('typing', {
+                    receiver_id: currentChat.id,
+                    sender_id: currentUser.id
+                });
+            }
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                isTyping = false;
+                socket.emit('stop_typing', {
+                    receiver_id: currentChat.id,
+                    sender_id: currentUser.id
+                });
+            }, 1000);
+        }
+
+        function stopTyping() {
+            if (isTyping) {
+                isTyping = false;
+                socket.emit('stop_typing', {
+                    receiver_id: currentChat.id,
+                    sender_id: currentUser.id
+                });
+            }
+        }
+
+        function setupSocketListeners() {
+            socket.on('new_message', (data) => {
+                if (currentChat && data.sender_id === currentChat.id) {
+                    loadMessages(currentChat.id);
+                }
+                loadConversations();
+            });
+
+            socket.on('user_status', (data) => {
+                if (currentChat && data.user_id === currentChat.id) {
+                    document.getElementById('chat-status').textContent = data.online ? 'Online' : 'Offline';
+                    document.getElementById('chat-status').className = data.online ? 'text-sm text-green-400' : 'text-sm text-gray-400';
+                    
+                    if (data.online) {
+                        document.getElementById('online-indicator').classList.remove('hidden');
+                    } else {
+                        document.getElementById('online-indicator').classList.add('hidden');
+                    }
+                }
+                loadConversations();
+            });
+
+            socket.on('user_typing', (data) => {
+                if (currentChat && data.sender_id === currentChat.id) {
+                    document.getElementById('typing-indicator').classList.remove('hidden');
+                }
+            });
+
+            socket.on('user_stop_typing', (data) => {
+                if (currentChat && data.sender_id === currentChat.id) {
+                    document.getElementById('typing-indicator').classList.add('hidden');
+                }
+            });
+        }
+
+               // Add to setupSocketListeners function in messages.html
+socket.on('incoming_call', (data) => {
+    console.log('📞 Incoming call received:', data);
+    
+    // Show call notification
+    showIncomingCallNotification(data);
+});
+
+function showIncomingCallNotification(callData) {
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-gray-900 border border-purple-500 rounded-2xl p-4 max-w-sm z-50';
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3 mb-3">
+            <span class="text-3xl">${callData.caller.avatar}</span>
+            <div>
+                <h4 class="font-bold">Incoming ${callData.call_type} Call</h4>
+                <p class="text-sm text-gray-400">From ${callData.caller.username}</p>
+            </div>
+        </div>
+        <div class="flex space-x-2">
+            <button onclick="acceptIncomingCall('${callData.call_id}')" class="flex-1 bg-green-500 hover:bg-green-600 py-2 rounded-lg">
+                Accept
+            </button>
+            <button onclick="rejectIncomingCall('${callData.call_id}')" class="flex-1 bg-red-500 hover:bg-red-600 py-2 rounded-lg">
+                Reject
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 30000);
+}
+
+function acceptIncomingCall(callId) {
+    // Open call window
+    window.open(`/call?call_id=${callId}`, '_blank', 'width=400,height=700');
+    
+    // Remove notification
+    const notifications = document.querySelectorAll('.fixed.top-4.right-4');
+    notifications.forEach(notification => notification.remove());
+}
+
+function rejectIncomingCall(callId) {
+    fetch(`${API_URL}/api/calls/${callId}/end`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${getToken()}`
+        }
+    });
+    
+    // Remove notification
+    const notifications = document.querySelectorAll('.fixed.top-4.right-4');
+    notifications.forEach(notification => notification.remove());
+}
+
+        // Enhanced UI Functions
+        function openNewMessage() {
+            document.getElementById('new-message-modal').classList.remove('hidden');
+        }
+
+        function closeNewMessage() {
+            document.getElementById('new-message-modal').classList.add('hidden');
+        }
+
+        function toggleAttachmentMenu() {
+            const menu = document.getElementById('attachment-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function openImagePicker() {
+            document.getElementById('image-input').click();
+            toggleAttachmentMenu();
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('image-preview').src = e.target.result;
+                    document.getElementById('image-preview-modal').classList.remove('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function closeImagePreview() {
+            document.getElementById('image-preview-modal').classList.add('hidden');
+            document.getElementById('image-input').value = '';
+        }
+
+        async function sendImage() {
+            // Implement image sending logic
+            alert('Image sending feature coming soon!');
+            closeImagePreview();
+        }
+
+        // Real call functions - replace the placeholder ones
+function startVoiceCall() {
+    if (!currentChat) return;
+    startCallFromChat(currentChat.id, 'voice');
+}
+
+function startVideoCall() {
+    if (!currentChat) return;
+    startCallFromChat(currentChat.id, 'video');
+}
+
+function startCallFromChat(userId, callType) {
+    // Open call interface
+    window.open(`/call?user_id=${userId}&type=${callType}`, '_blank', 
+        'width=400,height=700');
+}
+       
+        function showChatInfo() {
+            alert('Chat info feature coming soon!');
+        }
+
+        function refreshConversations() {
+            loadConversations();
+            showToast('Conversations refreshed', 'success');
+        }
+
+        // Search and user functions
+        let searchTimeout;
+        async function searchUsers(query) {
+            clearTimeout(searchTimeout);
+            
+            if (!query.trim()) {
+                document.getElementById('user-search-results').innerHTML = '<p class="text-center text-gray-400 py-8">Search for users to start chatting</p>';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`, {
+                        headers: { 'Authorization': `Bearer ${getToken()}` }
+                    });
+                    const result = await response.json();
+                    renderSearchResults(result.users || []);
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 500);
+        }
+
+        function renderSearchResults(users) {
+            const container = document.getElementById('user-search-results');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">No users found</p>';
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div 
+                    onclick="startNewChat(${user.id}, '${user.username}', '${user.avatar}')"
+                    class="flex items-center space-x-3 p-3 glass-effect rounded-lg cursor-pointer hover:bg-white/10 transition mb-2"
+                >
+                    <span class="text-4xl">${user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${user.username}</p>
+                        <p class="text-sm text-gray-400">${user.bio || 'Synapse user'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function startNewChat(userId, username, avatar) {
+            closeNewMessage();
+            openChat(userId, username, avatar, false);
+        }
+
+        async function getUserByUsername(username) {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${username}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                return null;
+            }
+        }
+
+        // Utility functions
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
+            return Math.floor(diff / 86400000) + 'd';
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 86400000) {
+                return 'Today';
+            } else if (diff < 172800000) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString();
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg backdrop-blur-xl border ${
+                type === 'success' ? 'border-green-500/30 bg-green-500/20' : 
+                type === 'error' ? 'border-red-500/30 bg-red-500/20' :
+                'border-blue-500/30 bg-blue-500/20'
+            } z-50`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Close attachment menu when clicking outside
+        document.addEventListener('click', (event) => {
+            const attachmentMenu = document.getElementById('attachment-menu');
+            const attachmentButton = document.querySelector('button[onclick="toggleAttachmentMenu()"]');
+            
+            if (attachmentMenu && !attachmentMenu.contains(event.target) && !attachmentButton.contains(event.target)) {
+                attachmentMenu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reels - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .reel-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+        }
+        .reel-item {
+            scroll-snap-align: start;
+            height: 100vh;
+        }
+        .reel-container::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white overflow-hidden">
+    <!-- Top Navigation -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4">
+        <div class="flex items-center justify-between max-w-md mx-auto">
+            <a href="/feed" class="text-white hover:text-gray-300">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </a>
+            <h1 class="text-xl font-bold">Reels</h1>
+            <button onclick="openCamera()" class="text-white hover:text-gray-300">
+                <i class="fas fa-camera text-2xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Reels Container -->
+    <div id="reels-container" class="reel-container">
+        <!-- Reels will be loaded here -->
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 flex items-center justify-center bg-black">
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-6xl text-pink-500 mb-4"></i>
+            <p class="text-xl">Loading Reels...</p>
+        </div>
+    </div>
+
+    <!-- Create Reel Modal -->
+    <div id="create-reel-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
+        <div class="bg-gray-900 rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Create Reel</h2>
+                <button onclick="closeCreateReel()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="create-reel-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Title</label>
+                    <input 
+                        type="text" 
+                        id="reel-title"
+                        class="w-full bg-gray-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        placeholder="Give your reel a title..."
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Video Emoji</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button type="button" onclick="selectReelEmoji('🎬')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎬</button>
+                        <button type="button" onclick="selectReelEmoji('🎥')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎥</button>
+                        <button type="button" onclick="selectReelEmoji('🎭')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎭</button>
+                        <button type="button" onclick="selectReelEmoji('🎪')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎪</button>
+                        <button type="button" onclick="selectReelEmoji('🎨')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎨</button>
+                        <button type="button" onclick="selectReelEmoji('🎯')" class="text-4xl p-2 bg-gray-800 rounded-lg hover:bg-gray-700">🎯</button>
+                    </div>
+                    <input type="hidden" id="reel-emoji" value="🎬">
+                </div>
+                
+                <button 
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-pink-500 to-purple-500 py-3 rounded-lg font-bold hover:from-pink-600 hover:to-purple-600"
+                >
+                    Create Reel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let reels = [];
+        let currentReelIndex = 0;
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load reels on page load
+        window.addEventListener('load', async () => {
+            await loadReels();
+        });
+
+        async function loadReels() {
+            try {
+                const response = await fetch(`${API_URL}/api/reels`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                reels = result.reels;
+                renderReels();
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Error loading reels:', error);
+                document.getElementById('loading').innerHTML = '<p class="text-red-500">Error loading reels</p>';
+            }
+        }
+
+        function renderReels() {
+            const container = document.getElementById('reels-container');
+            
+            if (reels.length === 0) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center h-screen">
+                        <div class="text-center">
+                            <i class="fas fa-film text-6xl text-gray-600 mb-4"></i>
+                            <p class="text-xl text-gray-400">No reels yet</p>
+                            <button onclick="openCamera()" class="mt-4 bg-pink-500 px-6 py-3 rounded-full font-bold">
+                                Create First Reel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = reels.map((reel, index) => `
+                <div class="reel-item relative bg-gradient-to-br from-purple-900 to-pink-900" data-index="${index}">
+                    <!-- Video/Content Area -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-9xl">${reel.thumbnail || '🎬'}</div>
+                    </div>
+                    
+                    <!-- Gradient Overlays -->
+                    <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent"></div>
+                    <div class="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/80 to-transparent"></div>
+                    
+                    <!-- Content Info (Bottom Left) -->
+                    <div class="absolute bottom-20 left-4 right-20 space-y-3">
+                        <!-- User Info -->
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl">${reel.user.avatar}</span>
+                            <span class="font-bold">${reel.user.username}</span>
+                            <button class="bg-transparent border-2 border-white px-4 py-1 rounded-full text-sm font-bold hover:bg-white hover:text-black transition">
+                                Follow
+                            </button>
+                        </div>
+                        
+                        <!-- Reel Title -->
+                        <p class="text-sm">${reel.title || 'Amazing reel! 🎬'}</p>
+                        
+                        <!-- Audio Info -->
+                        <div class="flex items-center space-x-2 text-xs">
+                            <i class="fas fa-music"></i>
+                            <span>Original Audio - ${reel.user.username}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons (Right Side) -->
+                    <div class="absolute bottom-20 right-4 space-y-6">
+                        <!-- Like -->
+                        <button onclick="likeReel(${reel.id})" class="flex flex-col items-center space-y-1">
+                            <div class="w-12 h-12 flex items-center justify-center">
+                                <i class="fas fa-heart text-3xl hover:scale-110 transition"></i>
+                            </div>
+                            <span class="text-xs font-bold">${formatNumber(reel.likes)}</span>
+                        </button>
+                        
+                        <!-- Comment -->
+                        <button onclick="openComments(${reel.id})" class="flex flex-col items-center space-y-1">
+                            <div class="w-12 h-12 flex items-center justify-center">
+                                <i class="fas fa-comment text-3xl hover:scale-110 transition"></i>
+                            </div>
+                            <span class="text-xs font-bold">${formatNumber(reel.comments)}</span>
+                        </button>
+                        
+                        <!-- Share -->
+                        <button onclick="shareReel(${reel.id})" class="flex flex-col items-center space-y-1">
+                            <div class="w-12 h-12 flex items-center justify-center">
+                                <i class="fas fa-paper-plane text-3xl hover:scale-110 transition"></i>
+                            </div>
+                            <span class="text-xs font-bold">Share</span>
+                        </button>
+                        
+                        <!-- More Options -->
+                        <button onclick="openReelOptions(${reel.id})" class="flex flex-col items-center space-y-1">
+                            <div class="w-12 h-12 flex items-center justify-center">
+                                <i class="fas fa-ellipsis-v text-2xl hover:scale-110 transition"></i>
+                            </div>
+                        </button>
+                        
+                        <!-- Profile Picture (Spinning) -->
+                        <div class="w-12 h-12 rounded-full border-2 border-white overflow-hidden animate-spin-slow">
+                            <div class="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-pink-500 to-purple-500">
+                                ${reel.user.avatar}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function openCamera() {
+            document.getElementById('create-reel-modal').classList.remove('hidden');
+        }
+
+        function closeCreateReel() {
+            document.getElementById('create-reel-modal').classList.add('hidden');
+        }
+
+        function selectReelEmoji(emoji) {
+            document.getElementById('reel-emoji').value = emoji;
+            event.target.classList.add('ring-2', 'ring-pink-500');
+        }
+
+        document.getElementById('create-reel-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('reel-title').value;
+            const emoji = document.getElementById('reel-emoji').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/reels`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        thumbnail: emoji,
+                        video_url: 'demo_video.mp4'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Reel created successfully!');
+                    closeCreateReel();
+                    await loadReels();
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error creating reel: ' + error.message);
+            }
+        });
+
+        async function likeReel(reelId) {
+            alert('❤️ Liked reel!');
+        }
+
+        function openComments(reelId) {
+            alert('💬 Comments coming soon!');
+        }
+
+        function shareReel(reelId) {
+            alert('📤 Share functionality coming soon!');
+        }
+
+        function openReelOptions(reelId) {
+            alert('⚙️ Options: Save, Report, Not Interested');
+        }
+    </script>
+</body>
+</html>

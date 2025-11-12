@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/feed" class="text-white hover:text-pink-400">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold">Settings</h1>
+            </div>
+            <button onclick="saveSettings()" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-lg font-bold transition">
+                Save Changes
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Settings Sections -->
+        <div class="space-y-6">
+            <!-- Edit Profile -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-user-edit text-pink-400 mr-3"></i>
+                    Edit Profile
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Avatar Selection -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Profile Avatar</label>
+                        <div class="flex items-center space-x-4">
+                            <div id="current-avatar" class="text-6xl">🚀</div>
+                            <div class="grid grid-cols-6 gap-2 flex-1">
+                                <button type="button" onclick="selectAvatar('🚀')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">🚀</button>
+                                <button type="button" onclick="selectAvatar('👨‍💻')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">👨‍💻</button>
+                                <button type="button" onclick="selectAvatar('👩‍🎨')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">👩‍🎨</button>
+                                <button type="button" onclick="selectAvatar('🎮')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">🎮</button>
+                                <button type="button" onclick="selectAvatar('⚽')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">⚽</button>
+                                <button type="button" onclick="selectAvatar('🎵')" class="avatar-btn text-4xl p-2 bg-white/10 rounded-lg hover:bg-pink-500 transition">🎵</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="avatar" value="🚀">
+                    </div>
+
+                    <!-- Username -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Username</label>
+                        <input 
+                            type="text" 
+                            id="username"
+                            class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            placeholder="your_username"
+                        >
+                        <p class="text-xs text-gray-400 mt-1">synapse.app/@your_username</p>
+                    </div>
+
+                    <!-- Bio -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Bio</label>
+                        <textarea 
+                            id="bio"
+                            rows="4"
+                            class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+                            placeholder="Tell us about yourself..."
+                        ></textarea>
+                        <p class="text-xs text-gray-400 mt-1"><span id="bio-count">0</span>/150</p>
+                    </div>
+
+                    <!-- Website -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Website</label>
+                        <input 
+                            type="url" 
+                            id="website"
+                            class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                            placeholder="https://yourwebsite.com"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Settings -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-cog text-blue-400 mr-3"></i>
+                    Account Settings
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Email</label>
+                        <div class="flex items-center space-x-2">
+                            <input 
+                                type="email" 
+                                id="email"
+                                class="flex-1 bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="your@email.com"
+                                readonly
+                            >
+                            <span id="email-verified" class="hidden bg-green-500 px-3 py-2 rounded-lg text-sm font-bold">
+                                <i class="fas fa-check-circle mr-1"></i>Verified
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Phone Number</label>
+                        <div class="flex items-center space-x-2">
+                            <input 
+                                type="tel" 
+                                id="phone"
+                                class="flex-1 bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="+1234567890"
+                            >
+                            <button onclick="verifyPhone()" class="bg-pink-500 hover:bg-pink-600 px-4 py-3 rounded-lg font-bold transition">
+                                Verify
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="border-t border-gray-700 pt-4">
+                        <button onclick="togglePasswordChange()" class="text-pink-400 hover:text-pink-300 font-bold">
+                            <i class="fas fa-key mr-2"></i>Change Password
+                        </button>
+                        
+                        <div id="password-change" class="hidden mt-4 space-y-3">
+                            <input 
+                                type="password" 
+                                id="old-password"
+                                class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="Current password"
+                            >
+                            <input 
+                                type="password" 
+                                id="new-password"
+                                class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="New password"
+                            >
+                            <input 
+                                type="password" 
+                                id="confirm-password"
+                                class="w-full bg-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                placeholder="Confirm new password"
+                            >
+                            <button onclick="changePassword()" class="w-full bg-pink-500 hover:bg-pink-600 py-3 rounded-lg font-bold transition">
+                                Update Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Settings -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-purple-500">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-shield-alt text-green-400 mr-3"></i>
+                    Privacy
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Private Account -->
+                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                        <div>
+                            <p class="font-bold">Private Account</p>
+                            <p class="text-sm text-gray-400">Only approved followers can see your posts</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="is-private" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- Activity Status -->
+                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                        <div>
+                            <p class="font-bold">Activity Status</p>
+                            <p class="text-sm text-gray-400">Show when you're online</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="show-activity" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- Story Sharing -->
+                    <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                        <div>
+                            <p class="font-bold">Allow Story Sharing</p>
+                            <p class="text-sm text-gray-400">Let others share your stories</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-pink-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-red-900/20 backdrop-blur-lg rounded-2xl p-6 border border-red-500">
+                <h2 class="text-2xl font-bold mb-6 flex items-center text-red-400">
+                    <i class="fas fa-exclamation-triangle mr-3"></i>
+                    Danger Zone
+                </h2>
+                
+                <div class="space-y-3">
+                    <button onclick="deactivateAccount()" class="w-full p-4 bg-orange-500/20 hover:bg-orange-500/30 rounded-lg text-left transition border border-orange-500">
+                        <p class="font-bold text-orange-400">Deactivate Account</p>
+                        <p class="text-sm text-gray-400">Temporarily disable your account</p>
+                    </button>
+                    
+                    <button onclick="deleteAccount()" class="w-full p-4 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-left transition border border-red-500">
+                        <p class="font-bold text-red-400">Delete Account</p>
+                        <p class="text-sm text-gray-400">Permanently delete your account and data</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <button onclick="logout()" class="w-full bg-white/10 hover:bg-white/20 py-4 rounded-lg font-bold transition">
+                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load user data on page load
+        window.addEventListener('load', () => {
+            loadUserData();
+        });
+
+        function loadUserData() {
+            if (currentUser) {
+                document.getElementById('username').value = currentUser.username || '';
+                document.getElementById('email').value = currentUser.email || '';
+                document.getElementById('bio').value = currentUser.bio || '';
+                document.getElementById('website').value = currentUser.website || '';
+                document.getElementById('current-avatar').textContent = currentUser.avatar || '🚀';
+                document.getElementById('avatar').value = currentUser.avatar || '🚀';
+                document.getElementById('is-private').checked = currentUser.is_private || false;
+                
+                if (currentUser.email_verified) {
+                    document.getElementById('email-verified').classList.remove('hidden');
+                }
+
+                updateBioCount();
+            }
+        }
+
+        function selectAvatar(emoji) {
+            document.getElementById('current-avatar').textContent = emoji;
+            document.getElementById('avatar').value = emoji;
+            
+            document.querySelectorAll('.avatar-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-pink-500');
+            });
+            event.target.classList.add('ring-2', 'ring-pink-500');
+        }
+
+        document.getElementById('bio').addEventListener('input', updateBioCount);
+
+        function updateBioCount() {
+            const bio = document.getElementById('bio').value;
+            document.getElementById('bio-count').textContent = bio.length;
+        }
+
+        function togglePasswordChange() {
+            const section = document.getElementById('password-change');
+            section.classList.toggle('hidden');
+        }
+
+        async function saveSettings() {
+            const username = document.getElementById('username').value;
+            const bio = document.getElementById('bio').value;
+            const website = document.getElementById('website').value;
+            const avatar = document.getElementById('avatar').value;
+            const isPrivate = document.getElementById('is-private').checked;
+
+            try {
+                const response = await fetch(`${API_URL}/api/settings/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        username,
+                        bio,
+                        website,
+                        avatar,
+                        is_private: isPrivate
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Update local storage
+                    currentUser = { ...currentUser, username, bio, website, avatar, is_private: isPrivate };
+                    localStorage.setItem('synapse_user', JSON.stringify(currentUser));
+                    
+                    alert('✅ Settings saved successfully!');
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error saving settings: ' + error.message);
+            }
+        }
+
+        async function changePassword() {
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('❌ New passwords do not match!');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('❌ Password must be at least 6 characters!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/settings/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        old_password: oldPassword,
+                        new_password: newPassword
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('✅ Password changed successfully!');
+                    document.getElementById('password-change').classList.add('hidden');
+                    document.getElementById('old-password').value = '';
+                    document.getElementById('new-password').value = '';
+                    document.getElementById('confirm-password').value = '';
+                } else {
+                    alert('❌ ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ Error changing password: ' + error.message);
+            }
+        }
+
+        function verifyPhone() {
+            const phone = document.getElementById('phone').value;
+            if (!phone) {
+                alert('❌ Please enter a phone number');
+                return;
+            }
+            alert('📱 Verification code sent to ' + phone);
+        }
+
+        function deactivateAccount() {
+            if (confirm('⚠️ Are you sure you want to deactivate your account? You can reactivate it anytime by logging in.')) {
+                alert('Account deactivation feature coming soon!');
+            }
+        }
+
+        function deleteAccount() {
+            if (confirm('🚨 WARNING: This will permanently delete your account and all data. This action cannot be undone!')) {
+                if (confirm('Are you absolutely sure? Type "DELETE" to confirm:')) {
+                    alert('Account deletion feature coming soon!');
+                }
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('synapse_token');
+                localStorage.removeItem('synapse_user');
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

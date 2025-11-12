@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Moment - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-400 to-purple-600 min-h-screen text-white">
+    <div class="max-w-md mx-auto p-4">
+        <div class="flex items-center justify-between mb-6">
+            <button onclick="history.back()" class="text-white">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </button>
+            <h1 class="text-xl font-bold">Capture Moment</h1>
+            <button onclick="publishMoment()" class="bg-white text-purple-600 px-4 py-2 rounded-full font-bold">
+                Share
+            </button>
+        </div>
+
+        <div class="bg-white/20 backdrop-blur-lg rounded-2xl p-4 mb-4">
+            <textarea id="moment-caption" placeholder="What's happening? Share your thoughts..." 
+                      class="w-full bg-white/10 rounded-xl p-3 text-white placeholder-white/60 resize-none h-32"></textarea>
+        </div>
+
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-4">
+            <p class="text-center text-white/60">Media upload features coming soon!</p>
+        </div>
+    </div>
+
+    <script>
+        async function publishMoment() {
+            const caption = document.getElementById('moment-caption').value;
+            
+            if (!caption.trim()) {
+                alert('Please add a caption to your moment');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('synapse_token');
+                const formData = new FormData();
+                formData.append('content', caption);
+
+                const response = await fetch('/api/moments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    window.location.href = '/moments/feed';
+                } else {
+                    alert('Error creating moment');
+                }
+            } catch (error) {
+                console.error('Error publishing moment:', error);
+                alert('Error creating moment');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            80%, 100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .ringing-animation::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 2px solid #EC4899;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+        
+        .video-container {
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .local-video {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            border: 2px solid #8B5CF6;
+            border-radius: 15px;
+            z-index: 10;
+        }
+        
+        .call-button {
+            transition: all 0.3s ease;
+        }
+        
+        .call-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white overflow-hidden">
+    <!-- Incoming Call Modal -->
+    <div id="incoming-call-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-3xl p-8 max-w-md w-full text-center border border-purple-500">
+            <div class="ringing-animation relative mb-6">
+                <span id="caller-avatar" class="text-8xl block">👤</span>
+            </div>
+            
+            <h2 id="caller-name" class="text-2xl font-bold mb-2">Username</h2>
+            <p id="call-type" class="text-gray-300 mb-6">Incoming Voice Call</p>
+            
+            <div class="flex justify-center space-x-6">
+                <button onclick="rejectCall()" class="call-button bg-red-500 hover:bg-red-600 w-16 h-16 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+                <button onclick="acceptCall()" class="call-button bg-green-500 hover:bg-green-600 w-16 h-16 rounded-full flex items-center justify-center">
+                    <i class="fas fa-phone text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Call Interface -->
+    <div id="active-call" class="hidden h-screen flex flex-col">
+        <!-- Call Header -->
+        <div class="bg-gray-900 border-b border-purple-500 p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="endCall()" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 id="active-call-username" class="text-xl font-bold">Username</h2>
+                        <p id="call-duration" class="text-sm text-green-400">00:00</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video/Audio Area -->
+        <div class="flex-1 relative p-4">
+            <!-- Remote User View -->
+            <div id="remote-media-container" class="video-container w-full h-full flex items-center justify-center">
+                <div id="audio-call-view" class="text-center">
+                    <span id="remote-avatar" class="text-12xl mb-6 block">👤</span>
+                    <h3 id="remote-username" class="text-3xl font-bold">Username</h3>
+                    <p class="text-gray-400 mt-2" id="call-status-text">Call in progress</p>
+                </div>
+                <!-- Video elements will be added here -->
+            </div>
+
+            <!-- Local Video Preview -->
+            <video id="local-video" class="local-video hidden" muted autoplay playsinline></video>
+        </div>
+
+        <!-- Call Controls -->
+        <div class="bg-gray-900 border-t border-purple-500 p-6">
+            <div class="flex items-center justify-center space-x-8">
+                <!-- Mute/Unmute -->
+                <button id="mute-button" onclick="toggleMute()" class="call-button bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center hover:bg-gray-600">
+                    <i class="fas fa-microphone text-2xl"></i>
+                </button>
+
+                <!-- Video On/Off -->
+                <button id="video-button" onclick="toggleVideo()" class="call-button bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center hover:bg-gray-600">
+                    <i class="fas fa-video text-2xl"></i>
+                </button>
+
+                <!-- End Call -->
+                <button onclick="endCall()" class="call-button bg-red-500 hover:bg-red-600 w-20 h-20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-phone-slash text-3xl"></i>
+                </button>
+
+                <!-- Switch Camera -->
+                <button id="switch-camera" onclick="switchCamera()" class="call-button bg-gray-700 w-16 h-16 rounded-full flex items-center justify-center hover:bg-gray-600">
+                    <i class="fas fa-camera-rotate text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Ended Screen -->
+    <div id="call-ended" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-3xl p-8 max-w-md w-full text-center border border-purple-500">
+            <i class="fas fa-phone-slash text-6xl text-red-500 mb-6"></i>
+            <h2 class="text-2xl font-bold mb-2">Call Ended</h2>
+            <p id="call-summary" class="text-gray-300 mb-6">Duration: 00:00</p>
+            <div class="flex space-x-4 justify-center">
+                <button onclick="closeCallEnded()" class="bg-purple-500 px-6 py-3 rounded-full hover:bg-purple-600">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const socket = io(API_URL);
+        
+        let currentCall = null;
+        let localStream = null;
+        let remoteStream = null;
+        let callStartTime = null;
+        let durationInterval = null;
+        let isMuted = false;
+        let isVideoEnabled = false;
+        let currentCamera = 'user';
+        let peerConnection = null;
+
+        // WebRTC configuration
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ]
+        };
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        function getCurrentUser() {
+            return JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        }
+
+        // Initialize when page loads
+
+         // Replace the window.load event in call.html
+window.addEventListener('load', () => {
+    setupSocketListeners();
+    
+    // Check if we're receiving a call
+    const urlParams = new URLSearchParams(window.location.search);
+    const callId = urlParams.get('call_id');
+    
+    if (callId) {
+        // We're receiving a call - show incoming call UI
+        currentCall = { id: callId, status: 'incoming' };
+        loadCallInfo(callId);
+    } else {
+        // We're starting a call
+        const userId = urlParams.get('user_id');
+        const callType = urlParams.get('type');
+        
+        if (userId && callType) {
+            startCall(userId, callType);
+        }
+    }
+});
+
+async function loadCallInfo(callId) {
+    try {
+        const response = await fetch(`${API_URL}/api/calls/info/${callId}`, {
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const callInfo = await response.json();
+            showIncomingCall(callInfo);
+        }
+    } catch (error) {
+        console.error('Error loading call info:', error);
+    }
+}
+
+        // Socket event listeners
+        function setupSocketListeners() {
+            socket.on('incoming_call', (data) => {
+                showIncomingCall(data);
+            });
+
+            socket.on('call_accepted', (data) => {
+                if (currentCall) {
+                    startCallConnection();
+                }
+            });
+
+            socket.on('call_ended', (data) => {
+                endCallUI();
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected to call server');
+            });
+        }
+
+        // Start a new call
+        async function startCall(receiverId, callType = 'voice') {
+            try {
+                const response = await fetch(`${API_URL}/api/calls/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({
+                        receiver_id: receiverId,
+                        call_type: callType
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentCall = {
+                        id: result.call_id,
+                        type: callType,
+                        receiverId: receiverId
+                    };
+                    
+                    showActiveCallUI();
+                    initializeMedia(callType);
+                }
+            } catch (error) {
+                console.error('Error starting call:', error);
+                alert('Error starting call');
+            }
+        }
+
+        // Show incoming call
+        function showIncomingCall(data) {
+            currentCall = {
+                id: data.call_id,
+                type: data.call_type,
+                caller: data.caller
+            };
+
+            document.getElementById('caller-avatar').textContent = data.caller.avatar;
+            document.getElementById('caller-name').textContent = data.caller.username;
+            document.getElementById('call-type').textContent = `Incoming ${data.call_type} Call`;
+            document.getElementById('incoming-call-modal').classList.remove('hidden');
+        }
+
+        // Accept call
+        async function acceptCall() {
+            if (!currentCall) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/calls/${currentCall.id}/accept`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (response.ok) {
+                    document.getElementById('incoming-call-modal').classList.add('hidden');
+                    showActiveCallUI();
+                    initializeMedia(currentCall.type);
+                }
+            } catch (error) {
+                console.error('Error accepting call:', error);
+            }
+        }
+
+        // Reject call
+        async function rejectCall() {
+            if (!currentCall) return;
+
+            try {
+                await fetch(`${API_URL}/api/calls/${currentCall.id}/end`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+            } catch (error) {
+                console.error('Error rejecting call:', error);
+            }
+
+            document.getElementById('incoming-call-modal').classList.add('hidden');
+            currentCall = null;
+        }
+
+        // Show active call UI
+        function showActiveCallUI() {
+            const otherUser = currentCall.caller || { username: 'User', avatar: '👤' };
+            
+            document.getElementById('active-call-username').textContent = otherUser.username;
+            document.getElementById('remote-username').textContent = otherUser.username;
+            document.getElementById('remote-avatar').textContent = otherUser.avatar;
+            
+            // Show/hide video elements based on call type
+            if (currentCall.type === 'video') {
+                document.getElementById('video-button').classList.remove('hidden');
+                document.getElementById('switch-camera').classList.remove('hidden');
+                document.getElementById('call-status-text').textContent = 'Video call in progress';
+            } else {
+                document.getElementById('video-button').classList.add('hidden');
+                document.getElementById('switch-camera').classList.add('hidden');
+                document.getElementById('call-status-text').textContent = 'Voice call in progress';
+            }
+
+            document.getElementById('active-call').classList.remove('hidden');
+            startCallTimer();
+        }
+
+        // Initialize media (camera/microphone)
+        async function initializeMedia(callType) {
+            try {
+                const constraints = {
+                    audio: true,
+                    video: callType === 'video' ? {
+                        facingMode: currentCamera
+                    } : false
+                };
+
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                if (callType === 'video') {
+                    const localVideo = document.getElementById('local-video');
+                    localVideo.srcObject = localStream;
+                    localVideo.classList.remove('hidden');
+                }
+
+                // For demo purposes, we'll simulate a successful call
+                simulateCallConnection();
+
+            } catch (error) {
+                console.error('Error accessing media:', error);
+                // Fallback: continue without media
+                simulateCallConnection();
+            }
+        }
+
+        // Simulate call connection (for demo)
+        function simulateCallConnection() {
+            document.getElementById('call-status-text').textContent = 
+                currentCall.type === 'video' ? 'Video call connected' : 'Voice call connected';
+        }
+
+        // Call controls
+        async function toggleMute() {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                isMuted = !isMuted;
+            }
+            
+            const muteButton = document.getElementById('mute-button');
+            muteButton.innerHTML = isMuted ? 
+                '<i class="fas fa-microphone-slash text-2xl text-red-400"></i>' :
+                '<i class="fas fa-microphone text-2xl"></i>';
+
+            // Show mute status
+            document.getElementById('call-status-text').textContent = 
+                isMuted ? 'Microphone muted' : 'Microphone on';
+        }
+
+        async function toggleVideo() {
+            if (localStream && currentCall.type === 'video') {
+                const videoTracks = localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.enabled = !track.enabled;
+                });
+                isVideoEnabled = !isVideoEnabled;
+                
+                const videoButton = document.getElementById('video-button');
+                videoButton.innerHTML = isVideoEnabled ? 
+                    '<i class="fas fa-video text-2xl"></i>' :
+                    '<i class="fas fa-video-slash text-2xl text-red-400"></i>';
+
+                document.getElementById('call-status-text').textContent = 
+                    isVideoEnabled ? 'Video on' : 'Video off';
+            }
+        }
+
+        async function switchCamera() {
+            if (!localStream || currentCall.type !== 'video') return;
+
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            
+            try {
+                // Stop current video tracks
+                localStream.getVideoTracks().forEach(track => track.stop());
+                
+                // Get new stream with switched camera
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentCamera },
+                    audio: true
+                });
+
+                // Update local video
+                document.getElementById('local-video').srcObject = newStream;
+                localStream = newStream;
+            } catch (error) {
+                console.error('Error switching camera:', error);
+            }
+        }
+
+        // End call
+        async function endCall() {
+            if (!currentCall) return;
+
+            try {
+                await fetch(`${API_URL}/api/calls/${currentCall.id}/end`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+            } catch (error) {
+                console.error('Error ending call:', error);
+            endCallUI();
+            }
+        }
+
+        function endCallUI() {
+            // Stop media streams
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+
+            // Stop timer
+            if (durationInterval) {
+                clearInterval(durationInterval);
+            }
+
+            // Show call ended screen
+            document.getElementById('active-call').classList.add('hidden');
+            document.getElementById('call-ended').classList.remove('hidden');
+            
+            currentCall = null;
+        }
+
+        function closeCallEnded() {
+            document.getElementById('call-ended').classList.add('hidden');
+            window.location.href = '/messages';
+        }
+
+        function startCallTimer() {
+            callStartTime = new Date();
+            durationInterval = setInterval(() => {
+                const now = new Date();
+                const duration = Math.floor((now - callStartTime) / 1000);
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                
+                document.getElementById('call-duration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Utility function to start call from chat
+        function startCallFromChat(userId, callType) {
+            // Open call in new window
+            const callWindow = window.open(`/call?user_id=${userId}&type=${callType}`, '_blank', 
+                'width=400,height=700,menubar=no,toolbar=no,location=no,status=no');
+            
+            if (!callWindow) {
+                // If popup blocked, redirect in current window
+                window.location.href = `/call?user_id=${userId}&type=${callType}`;
+            }
+        }
+    </script>
+</body>
+</html>

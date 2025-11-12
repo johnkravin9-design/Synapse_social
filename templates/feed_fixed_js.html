@@ -1,0 +1,283 @@
+<script>
+    let posts = [];
+    let stories = [];
+    let currentStoryIndex = 0;
+
+    // Load feed on page load
+    window.addEventListener('load', async () => {
+        await loadStories();
+        await loadPosts();
+        startLiveActivity();
+        loadSuggestions();
+    });
+
+    // Use PUBLIC endpoints that don't require authentication
+    async function loadStories() {
+        try {
+            console.log('Loading stories from public endpoint...');
+            const response = await fetch('/api/public/stories');
+            const result = await response.json();
+            stories = result.stories || [];
+            console.log('Stories loaded:', stories);
+            renderStories();
+        } catch (error) {
+            console.error('Error loading stories:', error);
+            // Fallback mock data
+            stories = [
+                {
+                    id: 1,
+                    user: { name: 'Sarah', avatar: '👩‍💼' },
+                    content: 'Just launched my new project! 🎉'
+                },
+                {
+                    id: 2,
+                    user: { name: 'Mike', avatar: '👨‍💻' },
+                    content: 'Beautiful sunset today 🌅'
+                }
+            ];
+            renderStories();
+        }
+    }
+
+    async function loadPosts() {
+        try {
+            console.log('Loading posts from public endpoint...');
+            const response = await fetch('/api/public/posts');
+            const result = await response.json();
+            posts = result.posts || [];
+            console.log('Posts loaded:', posts);
+            renderPosts();
+        } catch (error) {
+            console.error('Error loading posts:', error);
+            // Fallback mock data
+            posts = [
+                {
+                    id: 1,
+                    content: 'Welcome to Synapse Social! This is your first post.',
+                    user: { username: 'Admin', avatar: '🚀' },
+                    created_at: new Date().toISOString(),
+                    likes_count: 5,
+                    comments_count: 2
+                },
+                {
+                    id: 2,
+                    content: 'Just exploring this amazing platform! 😊',
+                    user: { username: 'User', avatar: '👤' },
+                    created_at: new Date().toISOString(),
+                    likes_count: 3,
+                    comments_count: 1
+                }
+            ];
+            renderPosts();
+        }
+    }
+
+    async function loadSuggestions() {
+        try {
+            const response = await fetch('/api/public/suggestions');
+            const result = await response.json();
+            renderSuggestions(result.suggestions || []);
+        } catch (error) {
+            console.error('Error loading suggestions:', error);
+            // Fallback mock suggestions
+            const suggestions = [
+                { id: 1, username: 'alex_tech', avatar: '🧑‍💻', mutual_friends: 3 },
+                { id: 2, username: 'emma_design', avatar: '👩‍🎨', mutual_friends: 2 },
+                { id: 3, username: 'mike_travel', avatar: '🧳', mutual_friends: 5 }
+            ];
+            renderSuggestions(suggestions);
+        }
+    }
+
+    function renderStories() {
+        const container = document.getElementById('stories-container');
+        if (!container) {
+            console.error('Stories container not found');
+            return;
+        }
+
+        let storiesHTML = `
+            <div class="flex-shrink-0 text-center">
+                <button onclick="openCreateStory()" class="story-circle">
+                    <div class="story-inner w-16 h-16 flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 rounded-full border-2 border-white">
+                        <i class="fas fa-plus text-2xl text-white"></i>
+                    </div>
+                </button>
+                <p class="text-xs mt-1">Create</p>
+            </div>
+        `;
+
+        storiesHTML += stories.map((story, index) => `
+            <div class="flex-shrink-0 text-center">
+                <button onclick="openStory(${index})" class="story-circle">
+                    <div class="story-inner w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-500 to-green-500 rounded-full border-2 border-white">
+                        ${story.user.avatar || '👤'}
+                    </div>
+                </button>
+                <p class="text-xs mt-1 truncate w-16">${story.user.name || 'User'}</p>
+            </div>
+        `).join('');
+
+        container.innerHTML = storiesHTML;
+    }
+
+    function renderPosts() {
+        const container = document.getElementById('posts-container');
+        if (!container) {
+            console.error('Posts container not found');
+            return;
+        }
+
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="glass-effect rounded-xl p-8 text-center">
+                    <div class="text-4xl mb-4">📝</div>
+                    <h3 class="text-xl font-bold mb-2">No Posts Yet</h3>
+                    <p class="text-gray-400">Be the first to create a post!</p>
+                    <button onclick="window.location.href='/create'" class="mt-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:opacity-90 transition">
+                        Create Post
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = posts.map(post => `
+            <div class="glass-effect rounded-xl p-4">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold">
+                        ${post.user.avatar || '👤'}
+                    </div>
+                    <div>
+                        <h4 class="font-bold">${post.user.username || 'User'}</h4>
+                        <p class="text-xs text-gray-400">${formatDate(post.created_at)}</p>
+                    </div>
+                </div>
+                <p class="mb-3">${post.content}</p>
+                <div class="flex space-x-4 text-sm text-gray-400">
+                    <button onclick="likePost(${post.id}, 'post')" class="flex items-center space-x-1 hover:text-red-500 transition">
+                        <i class="fas fa-heart"></i>
+                        <span>${post.likes_count || 0}</span>
+                    </button>
+                    <button onclick="toggleComments(${post.id})" class="flex items-center space-x-1 hover:text-blue-500 transition">
+                        <i class="fas fa-comment"></i>
+                        <span>${post.comments_count || 0}</span>
+                    </button>
+                    <button onclick="sharePost(${post.id})" class="flex items-center space-x-1 hover:text-green-500 transition">
+                        <i class="fas fa-share"></i>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderSuggestions(suggestions) {
+        const container = document.getElementById('suggestions-container');
+        if (!container) return;
+
+        container.innerHTML = suggestions.map(user => `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white text-sm">
+                        ${user.avatar || '👤'}
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm">${user.username}</p>
+                        <p class="text-xs text-gray-400">${user.mutual_friends || 0} mutual friends</p>
+                    </div>
+                </div>
+                <button class="text-blue-500 text-sm font-medium hover:text-blue-600">Follow</button>
+            </div>
+        `).join('');
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function startLiveActivity() {
+        // Simulate live activity
+        setInterval(() => {
+            const activities = [
+                'Sarah just shared a new post',
+                'Mike commented on your photo',
+                'Alex joined the platform',
+                'Emma started a live stream'
+            ];
+            const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+            
+            const activityDiv = document.getElementById('live-activity');
+            if (activityDiv) {
+                const activityElement = document.createElement('div');
+                activityElement.className = 'flex items-center space-x-2 text-sm animate-pulse';
+                activityElement.innerHTML = `
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>${randomActivity}</span>
+                `;
+                
+                activityDiv.insertBefore(activityElement, activityDiv.firstChild);
+                
+                // Keep only last 3 activities
+                if (activityDiv.children.length > 3) {
+                    activityDiv.removeChild(activityDiv.lastChild);
+                }
+            }
+        }, 8000);
+    }
+
+    // Basic interaction functions
+    function likePost(postId, type) {
+        alert(`Liked ${type} ${postId} - This would call the like API in production`);
+    }
+
+    function toggleComments(postId) {
+        alert(`Toggle comments for post ${postId}`);
+    }
+
+    function sharePost(postId) {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Check this post!',
+                text: 'Interesting post from Synapse Social',
+                url: window.location.href
+            });
+        } else {
+            alert('Share functionality - Link would be copied to clipboard');
+        }
+    }
+
+    function openCreateStory() {
+        alert('Create story modal would open here');
+    }
+
+    function openStory(index) {
+        alert(`Viewing story ${index + 1}`);
+    }
+
+    function copyInviteLink() {
+        navigator.clipboard.writeText('SYNAPSE-INVITE-123').then(() => {
+            alert('Invite link copied to clipboard!');
+        });
+    }
+
+    // API request helper (for when user is authenticated)
+    async function apiRequest(url, method = 'GET', data = null) {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(url, options);
+        return await response.json();
+    }
+
+    console.log('Feed JavaScript loaded successfully!');
+</script>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/feed" class="text-white hover:text-pink-400">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <h1 id="nav-username" class="text-xl font-bold">Profile</h1>
+            <button onclick="openProfileMenu()" class="text-white hover:text-pink-400">
+                <i class="fas fa-ellipsis-v text-xl"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto px-4 py-8">
+        <!-- Profile Header -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-purple-500">
+            <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-8">
+                <!-- Avatar -->
+                <div class="relative">
+                    <div id="profile-avatar" class="text-9xl w-32 h-32 flex items-center justify-center bg-gradient-to-br from-pink-500 to-purple-500 rounded-full">
+                        🚀
+                    </div>
+                    <button onclick="openStories()" class="absolute bottom-0 right-0 bg-pink-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-pink-600 transition">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <!-- Profile Info -->
+                <div class="flex-1 text-center md:text-left">
+                    <div class="flex flex-col md:flex-row items-center md:items-start space-y-3 md:space-y-0 md:space-x-4 mb-4">
+                        <h1 id="profile-username" class="text-2xl font-bold flex items-center">
+                            username
+                            <i class="fas fa-check-circle text-blue-500 text-lg ml-2 hidden" id="verified-badge"></i>
+                        </h1>
+                        <div class="flex space-x-2">
+                            <button id="follow-btn" onclick="toggleFollow()" class="bg-pink-500 hover:bg-pink-600 px-6 py-2 rounded-lg font-bold transition">
+                                Follow
+                            </button>
+                            <button onclick="sendMessage()" class="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg font-bold transition">
+                                Message
+                            </button>
+                            <button onclick="shareProfile()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="flex justify-center md:justify-start space-x-8 mb-4">
+                        <div class="text-center">
+                            <p id="posts-count" class="text-2xl font-bold">0</p>
+                            <p class="text-sm text-gray-400">Posts</p>
+                        </div>
+                        <button onclick="showFollowers()" class="text-center hover:text-pink-400 transition">
+                            <p id="followers-count" class="text-2xl font-bold">0</p>
+                            <p class="text-sm text-gray-400">Followers</p>
+                        </button>
+                        <button onclick="showFollowing()" class="text-center hover:text-pink-400 transition">
+                            <p id="following-count" class="text-2xl font-bold">0</p>
+                            <p class="text-sm text-gray-400">Following</p>
+                        </button>
+                        <div class="text-center">
+                            <p id="points-count" class="text-2xl font-bold text-yellow-400">0</p>
+                            <p class="text-sm text-gray-400">Points</p>
+                        </div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="mb-4">
+                        <p id="profile-bio" class="text-gray-300 mb-2">Hey there! I'm using Synapse 🚀</p>
+                        <a id="profile-website" href="#" class="text-pink-400 hover:text-pink-300 text-sm hidden">
+                            <i class="fas fa-link mr-1"></i>
+                            <span></span>
+                        </a>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                        <button onclick="viewStories()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-sm font-bold transition">
+                            <i class="fas fa-circle-notch mr-2"></i>Story
+                        </button>
+                        <button onclick="viewReels()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-sm font-bold transition">
+                            <i class="fas fa-film mr-2"></i>Reels
+                        </button>
+                        <button onclick="viewTagged()" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-sm font-bold transition">
+                            <i class="fas fa-user-tag mr-2"></i>Tagged
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Highlights -->
+        <div class="mb-6">
+            <div class="flex space-x-4 overflow-x-auto pb-4">
+                <button onclick="createHighlight()" class="flex-shrink-0 flex flex-col items-center space-y-2">
+                    <div class="w-20 h-20 rounded-full border-2 border-dashed border-gray-500 flex items-center justify-center hover:border-pink-500 transition">
+                        <i class="fas fa-plus text-2xl text-gray-500"></i>
+                    </div>
+                    <span class="text-xs text-gray-400">New</span>
+                </button>
+
+                <div class="flex-shrink-0 flex flex-col items-center space-y-2">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center cursor-pointer hover:scale-105 transition">
+                        <span class="text-4xl">🎉</span>
+                    </div>
+                    <span class="text-xs">Highlights</span>
+                </div>
+
+                <div class="flex-shrink-0 flex flex-col items-center space-y-2">
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center cursor-pointer hover:scale-105 transition">
+                        <span class="text-4xl">✨</span>
+                    </div>
+                    <span class="text-xs">Best</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-purple-500 mb-6">
+            <div class="flex justify-around">
+                <button onclick="switchTab('posts')" class="tab-btn active flex-1 py-3 border-b-2 border-pink-500 font-bold text-pink-500">
+                    <i class="fas fa-th mr-2"></i>Posts
+                </button>
+                <button onclick="switchTab('reels')" class="tab-btn flex-1 py-3 border-b-2 border-transparent hover:border-gray-500">
+                    <i class="fas fa-film mr-2"></i>Reels
+                </button>
+                <button onclick="switchTab('saved')" class="tab-btn flex-1 py-3 border-b-2 border-transparent hover:border-gray-500">
+                    <i class="fas fa-bookmark mr-2"></i>Saved
+                </button>
+                <button onclick="switchTab('tagged')" class="tab-btn flex-1 py-3 border-b-2 border-transparent hover:border-gray-500">
+                    <i class="fas fa-user-tag mr-2"></i>Tagged
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div id="posts-grid" class="grid grid-cols-3 gap-1 md:gap-2">
+            <!-- Posts will be loaded here -->
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
+            <p class="mt-4 text-gray-400">Loading posts...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i class="fas fa-camera text-6xl text-gray-600 mb-4"></i>
+            <p class="text-xl font-bold mb-2">No posts yet</p>
+            <p class="text-gray-400">When you share photos, they'll appear here</p>
+        </div>
+    </div>
+
+    <!-- Profile Menu Modal -->
+    <div id="profile-menu-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-sm">
+            <button onclick="viewSettings()" class="w-full p-4 hover:bg-gray-800 transition text-left border-b border-gray-800">
+                <i class="fas fa-cog mr-3 text-pink-400"></i>Settings
+            </button>
+            <button onclick="viewArchive()" class="w-full p-4 hover:bg-gray-800 transition text-left border-b border-gray-800">
+                <i class="fas fa-archive mr-3 text-blue-400"></i>Archive
+            </button>
+            <button onclick="viewActivity()" class="w-full p-4 hover:bg-gray-800 transition text-left border-b border-gray-800">
+                <i class="fas fa-clock mr-3 text-green-400"></i>Your Activity
+            </button>
+            <button onclick="qrCode()" class="w-full p-4 hover:bg-gray-800 transition text-left border-b border-gray-800">
+                <i class="fas fa-qrcode mr-3 text-purple-400"></i>QR Code
+            </button>
+            <button onclick="closeProfileMenu()" class="w-full p-4 hover:bg-gray-800 transition text-left">
+                <i class="fas fa-times mr-3 text-gray-400"></i>Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Followers/Following Modal -->
+    <div id="followers-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h2 id="modal-title" class="text-xl font-bold">Followers</h2>
+                <button onclick="closeFollowersModal()" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 border-b border-gray-800">
+                <input 
+                    type="text" 
+                    placeholder="Search..."
+                    class="w-full bg-gray-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+            </div>
+
+            <div id="followers-list" class="flex-1 overflow-y-auto p-4">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        let profileUser = null;
+        let currentTab = 'posts';
+        let isOwnProfile = false;
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Get username from URL
+        const username = window.location.pathname.split('/').pop();
+
+        // Load profile on page load
+        window.addEventListener('load', async () => {
+            await loadProfile();
+        });
+
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${username}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                profileUser = result;
+                
+                // Check if this is user's own profile
+                isOwnProfile = currentUser.username === username;
+                
+                renderProfile();
+                await loadPosts();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                alert('Error loading profile');
+                window.location.href = '/feed';
+            }
+        }
+
+        function renderProfile() {
+            document.getElementById('nav-username').textContent = profileUser.username;
+            document.getElementById('profile-avatar').textContent = profileUser.avatar;
+            document.getElementById('profile-username').innerHTML = `
+                ${profileUser.username}
+                ${profileUser.is_verified ? '<i class="fas fa-check-circle text-blue-500 text-lg ml-2"></i>' : ''}
+            `;
+            document.getElementById('posts-count').textContent = profileUser.posts_count;
+            document.getElementById('followers-count').textContent = formatNumber(profileUser.followers_count);
+            document.getElementById('following-count').textContent = formatNumber(profileUser.following_count);
+            document.getElementById('points-count').textContent = formatNumber(profileUser.points || 0);
+            document.getElementById('profile-bio').textContent = profileUser.bio;
+
+            if (profileUser.website) {
+                const websiteLink = document.getElementById('profile-website');
+                websiteLink.classList.remove('hidden');
+                websiteLink.href = profileUser.website;
+                websiteLink.querySelector('span').textContent = profileUser.website;
+            }
+
+            // Update buttons based on ownership
+            if (isOwnProfile) {
+                document.getElementById('follow-btn').outerHTML = `
+                    <a href="/settings" class="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-lg font-bold transition">
+                        Edit Profile
+                    </a>
+                `;
+                document.querySelector('[onclick="sendMessage()"]').classList.add('hidden');
+            } else {
+                const followBtn = document.getElementById('follow-btn');
+                if (profileUser.is_following) {
+                    followBtn.textContent = 'Following';
+                    followBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+                    followBtn.classList.add('bg-white/10', 'hover:bg-white/20');
+                }
+            }
+        }
+
+        async function loadPosts() {
+            const grid = document.getElementById('posts-grid');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('empty-state');
+
+            try {
+                const response = await fetch(`${API_URL}/api/posts`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                
+                // Filter posts by this user
+                const userPosts = result.posts.filter(post => post.user.username === username);
+                
+                loading.classList.add('hidden');
+
+                if (userPosts.length === 0) {
+                    grid.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                grid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                grid.innerHTML = userPosts.map(post => `
+                    <div class="aspect-square bg-gray-800 rounded cursor-pointer hover:opacity-80 transition relative overflow-hidden group">
+                        <div class="absolute inset-0 flex items-center justify-center text-6xl">
+                            ${post.image || '📷'}
+                        </div>
+                        
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-6">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-heart"></i>
+                                <span class="font-bold">${formatNumber(post.likes)}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-comment"></i>
+                                <span class="font-bold">${formatNumber(post.comments)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                loading.innerHTML = '<p class="text-red-400">Error loading posts</p>';
+            }
+        }
+
+        async function toggleFollow() {
+            if (isOwnProfile) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/users/${profileUser.id}/follow`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+
+                const followBtn = document.getElementById('follow-btn');
+                if (result.action === 'followed') {
+                    followBtn.textContent = 'Following';
+                    followBtn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+                    followBtn.classList.add('bg-white/10', 'hover:bg-white/20');
+                    profileUser.followers_count++;
+                } else {
+                    followBtn.textContent = 'Follow';
+                    followBtn.classList.remove('bg-white/10', 'hover:bg-white/20');
+                    followBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+                    profileUser.followers_count--;
+                }
+
+                document.getElementById('followers-count').textContent = formatNumber(profileUser.followers_count);
+            } catch (error) {
+                console.error('Error toggling follow:', error);
+            }
+        }
+
+        function sendMessage() {
+            window.location.href = '/messages';
+        }
+
+        function shareProfile() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url);
+            alert('✅ Profile link copied to clipboard!');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-pink-500', 'text-pink-500');
+                btn.classList.add('border-transparent');
+            });
+            
+            event.target.classList.add('active', 'border-pink-500', 'text-pink-500');
+            event.target.classList.remove('border-transparent');
+
+            if (tab === 'posts') {
+                loadPosts();
+            } else {
+                alert(`${tab.charAt(0).toUpperCase() + tab.slice(1)} coming soon!`);
+            }
+        }
+
+        function openProfileMenu() {
+            document.getElementById('profile-menu-modal').classList.remove('hidden');
+        }
+
+        function closeProfileMenu() {
+            document.getElementById('profile-menu-modal').classList.add('hidden');
+        }
+
+        function viewSettings() {
+            window.location.href = '/settings';
+        }
+
+        function viewArchive() {
+            alert('Archive feature coming soon!');
+        }
+
+        function viewActivity() {
+            alert('Activity feature coming soon!');
+        }
+
+        function qrCode() {
+            alert('QR Code feature coming soon!');
+        }
+
+        function showFollowers() {
+            document.getElementById('modal-title').textContent = 'Followers';
+            document.getElementById('followers-modal').classList.remove('hidden');
+            // Load followers list here
+        }
+
+        function showFollowing() {
+            document.getElementById('modal-title').textContent = 'Following';
+            document.getElementById('followers-modal').classList.remove('hidden');
+            // Load following list here
+        }
+
+        function closeFollowersModal() {
+            document.getElementById('followers-modal').classList.add('hidden');
+        }
+
+        function openStories() {
+            window.location.href = '/create';
+        }
+
+        function createHighlight() {
+            alert('Create highlight from your stories!');
+        }
+
+        function viewStories() {
+            alert('Stories feature!');
+        }
+
+        function viewReels() {
+            window.location.href = '/reels';
+        }
+
+        function viewTagged() {
+            switchTab('tagged');
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+    </script>
+</body>
+</html>

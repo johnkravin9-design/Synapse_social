@@ -1,0 +1,24 @@
+--- app.py.old
++++ app.py.new
+@@ -519,7 +519,7 @@
+ @token_required
+ def get_posts(current_user):
+     try:
+-        user = db.session.get(User, user_id)
++        user = User.query.get(post.user_id)
+         posts = Post.query.order_by(Post.created_at.desc()).all()
+         posts_data = []
+         
+@@ -984,7 +984,11 @@
+             reels_data.append({
+                 'id': reel.id,
+                 'caption': reel.caption,
+-                'video': reel.video,
++                'media': {
++                    'id': media.id if media else None,
++                    'file_path': media.file_path if media else None,
++                    'file_type': media.file_type if media else None
++                } if media else None,
+                 'created_at': reel.created_at.isoformat(),
+                 'likes_count': reel.likes_count,
+                 'comments_count': reel.comments_count,

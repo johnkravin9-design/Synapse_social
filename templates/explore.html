@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <!-- Top Navigation -->
+    <nav class="bg-black/40 backdrop-blur-lg border-b border-purple-500 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex items-center space-x-4">
+                <a href="/feed" class="text-white hover:text-pink-400">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                
+                <!-- Search Bar -->
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="Search users, tags, places..."
+                        class="w-full bg-white/10 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    >
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                
+                <button onclick="toggleFilters()" class="p-2 hover:bg-white/10 rounded-full">
+                    <i class="fas fa-sliders-h text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Search Results Dropdown -->
+            <div id="search-results" class="hidden absolute left-4 right-4 mt-2 bg-gray-900 rounded-lg shadow-2xl border border-purple-500 max-h-96 overflow-y-auto">
+                <!-- Results will be loaded here -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- Filter Tags (Hidden by default) -->
+    <div id="filter-tags" class="hidden bg-black/40 backdrop-blur-lg p-4 border-b border-purple-500">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex space-x-2 overflow-x-auto pb-2">
+                <button onclick="filterByType('all')" class="filter-btn active px-4 py-2 bg-pink-500 rounded-full text-sm font-bold whitespace-nowrap">
+                    All
+                </button>
+                <button onclick="filterByType('videos')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Videos
+                </button>
+                <button onclick="filterByType('popular')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Popular
+                </button>
+                <button onclick="filterByType('recent')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Recent
+                </button>
+                <button onclick="filterByType('art')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Art & Design
+                </button>
+                <button onclick="filterByType('tech')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Technology
+                </button>
+                <button onclick="filterByType('food')" class="filter-btn px-4 py-2 bg-white/10 rounded-full text-sm font-bold whitespace-nowrap hover:bg-white/20">
+                    Food
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Trending Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-fire text-orange-500 mr-2"></i>
+                Trending Now
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="bg-gradient-to-br from-orange-500 to-pink-500 rounded-xl p-4 cursor-pointer hover:scale-105 transition">
+                    <p class="text-4xl mb-2">🔥</p>
+                    <p class="font-bold">#Innovation</p>
+                    <p class="text-sm text-white/80">1.2M posts</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl p-4 cursor-pointer hover:scale-105 transition">
+                    <p class="text-4xl mb-2">🚀</p>
+                    <p class="font-bold">#Startup</p>
+                    <p class="text-sm text-white/80">856K posts</p>
+                </div>
+                <div class="bg-gradient-to-br from-green-500 to-teal-500 rounded-xl p-4 cursor-pointer hover:scale-105 transition">
+                    <p class="text-4xl mb-2">🤖</p>
+                    <p class="font-bold">#AI</p>
+                    <p class="text-sm text-white/80">2.4M posts</p>
+                </div>
+                <div class="bg-gradient-to-br from-yellow-500 to-red-500 rounded-xl p-4 cursor-pointer hover:scale-105 transition">
+                    <p class="text-4xl mb-2">💡</p>
+                    <p class="font-bold">#Ideas</p>
+                    <p class="text-sm text-white/80">643K posts</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explore Grid -->
+        <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Discover</h2>
+            <button onclick="loadMorePosts()" class="text-pink-400 hover:text-pink-300 text-sm font-bold">
+                <i class="fas fa-sync-alt mr-1"></i> Refresh
+            </button>
+        </div>
+        
+        <div id="explore-grid" class="grid grid-cols-3 gap-1 md:gap-2">
+            <!-- Posts will be loaded here -->
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-4xl text-pink-500"></i>
+            <p class="mt-2 text-gray-400">Loading amazing content...</p>
+        </div>
+    </div>
+
+    <!-- Post Detail Modal -->
+    <div id="post-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row">
+            <!-- Image Section -->
+            <div class="md:w-2/3 bg-black flex items-center justify-center p-8">
+                <div id="modal-image" class="text-9xl"></div>
+            </div>
+            
+            <!-- Details Section -->
+            <div class="md:w-1/3 flex flex-col">
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span id="modal-avatar" class="text-3xl"></span>
+                        <div>
+                            <p id="modal-username" class="font-bold"></p>
+                            <p id="modal-location" class="text-xs text-gray-400"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Comments Section -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4" id="modal-comments">
+                    <!-- Comments will be loaded here -->
+                </div>
+                
+                <!-- Actions -->
+                <div class="border-t border-gray-800 p-4">
+                    <div class="flex items-center space-x-4 mb-3">
+                        <button onclick="likePost()" class="hover:text-pink-500 transition">
+                            <i class="far fa-heart text-2xl"></i>
+                        </button>
+                        <button class="hover:text-blue-500 transition">
+                            <i class="far fa-comment text-2xl"></i>
+                        </button>
+                        <button class="hover:text-green-500 transition">
+                            <i class="far fa-paper-plane text-2xl"></i>
+                        </button>
+                        <button class="ml-auto hover:text-yellow-500 transition">
+                            <i class="far fa-bookmark text-2xl"></i>
+                        </button>
+                    </div>
+                    <p id="modal-likes" class="font-bold text-sm mb-2"></p>
+                    <p id="modal-content" class="text-sm mb-3"></p>
+                    
+                    <!-- Add Comment -->
+                    <div class="flex items-center space-x-2">
+                        <input 
+                            type="text" 
+                            id="comment-input"
+                            placeholder="Add a comment..."
+                            class="flex-1 bg-transparent border-b border-gray-700 py-2 focus:outline-none focus:border-pink-500"
+                        >
+                        <button onclick="postComment()" class="text-pink-500 font-bold hover:text-pink-400">
+                            Post
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let explorePosts = [];
+        let currentPost = null;
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Load explore posts on page load
+        window.addEventListener('load', async () => {
+            await loadExplorePosts();
+        });
+
+        async function loadExplorePosts() {
+            try {
+                const response = await fetch(`${API_URL}/api/explore`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                explorePosts = result.posts;
+                renderExploreGrid();
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error('Error loading explore posts:', error);
+                document.getElementById('loading').innerHTML = '<p class="text-red-500">Error loading posts</p>';
+            }
+        }
+
+        function renderExploreGrid() {
+            const grid = document.getElementById('explore-grid');
+            
+            if (explorePosts.length === 0) {
+                grid.innerHTML = '<p class="col-span-3 text-center text-gray-400 py-8">No posts yet. Be the first to post!</p>';
+                return;
+            }
+
+            grid.innerHTML = explorePosts.map((post, index) => `
+                <div 
+                    onclick="openPostModal(${index})"
+                    class="aspect-square bg-gray-800 rounded cursor-pointer hover:opacity-80 transition relative overflow-hidden group"
+                >
+                    <div class="absolute inset-0 flex items-center justify-center text-6xl">
+                        ${post.image || '📷'}
+                    </div>
+                    
+                    <!-- Hover Overlay -->
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-6">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-heart"></i>
+                            <span class="font-bold">${formatNumber(post.likes)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-comment"></i>
+                            <span class="font-bold">${formatNumber(post.comments)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openPostModal(index) {
+            currentPost = explorePosts[index];
+            const modal = document.getElementById('post-modal');
+            
+            document.getElementById('modal-image').textContent = currentPost.image || '📷';
+            document.getElementById('modal-avatar').textContent = currentPost.user.avatar;
+            document.getElementById('modal-username').textContent = currentPost.user.username;
+            document.getElementById('modal-likes').textContent = `${formatNumber(currentPost.likes)} likes`;
+            document.getElementById('modal-content').textContent = currentPost.content || '';
+            
+            loadComments(currentPost.id);
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('post-modal').classList.add('hidden');
+        }
+
+        async function loadComments(postId) {
+            try {
+                const response = await fetch(`${API_URL}/api/posts/${postId}/comments`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                renderComments(result.comments);
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        }
+
+        function renderComments(comments) {
+            const container = document.getElementById('modal-comments');
+            
+            if (comments.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">No comments yet. Be the first!</p>';
+                return;
+            }
+
+            container.innerHTML = comments.map(comment => `
+                <div class="flex items-start space-x-3">
+                    <span class="text-2xl">${comment.user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="text-sm">
+                            <span class="font-bold">${comment.user.username}</span>
+                            ${comment.content}
+                        </p>
+                        <div class="flex items-center space-x-4 mt-1 text-xs text-gray-400">
+                            <span>${comment.timestamp}</span>
+                            <button class="hover:text-white">Like</button>
+                            <button class="hover:text-white">Reply</button>
+                        </div>
+                    </div>
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="far fa-heart text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function postComment() {
+            const content = document.getElementById('comment-input').value.trim();
+            if (!content || !currentPost) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/posts/${currentPost.id}/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                if (response.ok) {
+                    document.getElementById('comment-input').value = '';
+                    await loadComments(currentPost.id);
+                }
+            } catch (error) {
+                console.error('Error posting comment:', error);
+            }
+        }
+
+        function toggleFilters() {
+            const filters = document.getElementById('filter-tags');
+            filters.classList.toggle('hidden');
+        }
+
+        function filterByType(type) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-pink-500');
+                btn.classList.add('bg-white/10');
+            });
+            event.target.classList.add('active', 'bg-pink-500');
+            event.target.classList.remove('bg-white/10');
+            
+            alert(`Filtering by: ${type}`);
+        }
+
+        async function loadMorePosts() {
+            await loadExplorePosts();
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // Search functionality
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                performSearch(e.target.value);
+            }, 500);
+        });
+
+        async function performSearch(query) {
+            if (!query.trim()) {
+                document.getElementById('search-results').classList.add('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const result = await response.json();
+                renderSearchResults(result.users);
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        function renderSearchResults(users) {
+            const container = document.getElementById('search-results');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p class="p-4 text-gray-400">No results found</p>';
+                container.classList.remove('hidden');
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <a href="/profile/${user.username}" class="flex items-center space-x-3 p-3 hover:bg-gray-800 transition">
+                    <span class="text-3xl">${user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="font-bold flex items-center">
+                            ${user.username}
+                            ${user.is_verified ? '<i class="fas fa-check-circle text-blue-500 text-xs ml-1"></i>' : ''}
+                        </p>
+                        <p class="text-sm text-gray-400">${user.bio || 'Synapse user'}</p>
+                        <p class="text-xs text-gray-500">${formatNumber(user.followers_count)} followers</p>
+                    </div>
+                </a>
+            `).join('');
+            
+            container.classList.remove('hidden');
+        }
+
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#search-input') && !e.target.closest('#search-results')) {
+                document.getElementById('search-results').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

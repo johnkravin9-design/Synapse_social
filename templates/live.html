@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-black text-white">
+    <!-- Stream Container -->
+    <div id="stream-container" class="flex flex-col h-screen">
+        <!-- Video Player -->
+        <div class="flex-1 bg-black relative">
+            <video 
+                id="stream-video" 
+                class="w-full h-full object-contain"
+                controls
+                autoplay
+                playsinline
+            >
+                Your browser does not support the video tag.
+            </video>
+            
+            <!-- Stream Info Overlay -->
+            <div class="absolute top-4 left-4 right-4 flex justify-between items-start">
+                <div class="bg-black/70 backdrop-blur-lg rounded-lg p-4 max-w-md">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <span id="streamer-avatar" class="text-2xl">👤</span>
+                        <div>
+                            <h2 id="stream-title" class="font-bold text-lg">Live Stream</h2>
+                            <p id="streamer-name" class="text-sm text-gray-300">Streamer</p>
+                        </div>
+                    </div>
+                    <p id="stream-description" class="text-sm text-gray-400"></p>
+                </div>
+                
+                <!-- Viewer Count -->
+                <div class="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                    <i class="fas fa-circle animate-pulse"></i>
+                    <span>LIVE</span>
+                    <span id="viewer-count">0</span>
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+            
+            <!-- Stream Controls -->
+            <div class="absolute bottom-4 left-4 right-4 flex justify-center space-x-4">
+                <button onclick="toggleLike()" class="bg-white/20 backdrop-blur-lg rounded-full p-3 hover:bg-white/30 transition">
+                    <i class="fas fa-heart text-xl"></i>
+                </button>
+                <button onclick="shareStream()" class="bg-white/20 backdrop-blur-lg rounded-full p-3 hover:bg-white/30 transition">
+                    <i class="fas fa-share text-xl"></i>
+                </button>
+                <button onclick="toggleFullscreen()" class="bg-white/20 backdrop-blur-lg rounded-full p-3 hover:bg-white/30 transition">
+                    <i class="fas fa-expand text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="w-full md:w-96 bg-gray-900 border-l border-gray-800 flex flex-col h-64 md:h-auto">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                <h3 class="font-bold">Live Chat</h3>
+                <div class="flex items-center space-x-2 text-sm">
+                    <i class="fas fa-users"></i>
+                    <span id="chat-user-count">0</span>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-comments text-2xl mb-2"></i>
+                    <p>Live chat will appear here</p>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-gray-800">
+                <div class="flex space-x-2">
+                    <input 
+                        type="text" 
+                        id="chat-input"
+                        placeholder="Send a message..."
+                        class="flex-1 bg-gray-800 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        maxlength="200"
+                    >
+                    <button onclick="sendChatMessage()" class="bg-pink-500 hover:bg-pink-600 rounded-full p-2 transition">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div class="text-center">
+            <i class="fas fa-broadcast-tower text-6xl text-pink-500 mb-4 animate-pulse"></i>
+            <p class="text-xl">Connecting to live stream...</p>
+        </div>
+    </div>
+
+    <!-- Stream Ended Overlay -->
+    <div id="ended-overlay" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div class="text-center">
+            <i class="fas fa-broadcast-tower text-6xl text-gray-500 mb-4"></i>
+            <h2 class="text-2xl font-bold mb-2">Stream Ended</h2>
+            <p class="text-gray-400 mb-6">The live stream has ended.</p>
+            <button onclick="goBack()" class="bg-pink-500 hover:bg-pink-600 px-6 py-3 rounded-lg font-bold">
+                Go Back
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const socket = io();
+        let currentStreamId = null;
+        let isLiked = false;
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        // Get stream ID from URL
+        function getStreamIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        async function loadStream() {
+            const streamId = getStreamIdFromUrl();
+            if (!streamId) {
+                alert('No stream ID provided');
+                window.location.href = '/feed';
+                return;
+            }
+
+            try {
+                // Join the stream
+                const response = await fetch(`${API_URL}/api/live/join/${streamId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to join stream');
+                }
+
+                currentStreamId = streamId;
+                
+                // Join WebSocket room
+                socket.emit('join_stream', { stream_id: streamId });
+
+                // Load stream info
+                const streamsResponse = await fetch(`${API_URL}/api/live/streams`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                const streamsData = await streamsResponse.json();
+                const stream = streamsData.streams.find(s => s.id == streamId);
+
+                if (stream) {
+                    updateStreamUI(stream);
+                }
+
+                // Load chat messages
+                await loadChatMessages(streamId);
+
+                // Hide loading overlay
+                document.getElementById('loading-overlay').classList.add('hidden');
+
+            } catch (error) {
+                console.error('Error loading stream:', error);
+                alert('Failed to load stream');
+                window.location.href = '/feed';
+            }
+        }
+
+        function updateStreamUI(stream) {
+            document.getElementById('stream-title').textContent = stream.title;
+            document.getElementById('streamer-name').textContent = stream.user.username;
+            document.getElementById('streamer-avatar').textContent = stream.user.avatar;
+            document.getElementById('stream-description').textContent = stream.description;
+            document.getElementById('viewer-count').textContent = stream.viewers_count;
+            document.getElementById('chat-user-count').textContent = stream.viewers_count;
+
+            // For demo purposes, we'll use a placeholder video
+            // In production, you'd connect to actual RTMP/HLS stream
+            const video = document.getElementById('stream-video');
+            video.innerHTML = `
+                <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4">
+            `;
+            video.load();
+        }
+
+        async function loadChatMessages(streamId) {
+            try {
+                const response = await fetch(`${API_URL}/api/live/${streamId}/comments`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                const data = await response.json();
+                renderChatMessages(data.comments);
+            } catch (error) {
+                console.error('Error loading chat:', error);
+            }
+        }
+
+        function renderChatMessages(comments) {
+            const container = document.getElementById('chat-messages');
+            
+            if (comments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-comments text-2xl mb-2"></i>
+                        <p>No messages yet. Be the first to chat!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = comments.map(comment => `
+                <div class="flex items-start space-x-2">
+                    <span class="text-xl flex-shrink-0">${comment.user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="text-sm">
+                            <span class="font-bold text-pink-400">${comment.user.username}</span>
+                            <span class="text-gray-400 text-xs ml-2">${comment.timestamp}</span>
+                        </p>
+                        <p class="text-white">${comment.message}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message || !currentStreamId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/live/${currentStreamId}/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                if (response.ok) {
+                    input.value = '';
+                } else {
+                    alert('Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        async function toggleLike() {
+            if (!currentStreamId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/api/live/${currentStreamId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (response.ok) {
+                    isLiked = !isLiked;
+                    const likeBtn = document.querySelector('button[onclick="toggleLike()"]');
+                    likeBtn.classList.toggle('text-red-500', isLiked);
+                }
+            } catch (error) {
+                console.error('Error liking stream:', error);
+            }
+        }
+
+        function shareStream() {
+            const streamUrl = window.location.href;
+            navigator.clipboard.writeText(streamUrl).then(() => {
+                alert('Stream link copied to clipboard!');
+            });
+        }
+
+        function toggleFullscreen() {
+            const video = document.getElementById('stream-video');
+            if (!document.fullscreenElement) {
+                video.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        // WebSocket event handlers
+        socket.on('new_stream_comment', (data) => {
+            const container = document.getElementById('chat-messages');
+            const messageHtml = `
+                <div class="flex items-start space-x-2">
+                    <span class="text-xl flex-shrink-0">${data.user.avatar}</span>
+                    <div class="flex-1">
+                        <p class="text-sm">
+                            <span class="font-bold text-pink-400">${data.user.username}</span>
+                            <span class="text-gray-400 text-xs ml-2">${data.timestamp}</span>
+                        </p>
+                        <p class="text-white">${data.message}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Remove placeholder if it exists
+            if (container.querySelector('.text-center')) {
+                container.innerHTML = '';
+            }
+            
+            container.innerHTML += messageHtml;
+            container.scrollTop = container.scrollHeight;
+        });
+
+        socket.on('viewer_count_update', (data) => {
+            if (data.stream_id == currentStreamId) {
+                document.getElementById('viewer-count').textContent = data.viewers_count;
+                document.getElementById('chat-user-count').textContent = data.viewers_count;
+            }
+        });
+
+        socket.on('live_stream_ended', (data) => {
+            if (data.stream_id == currentStreamId) {
+                document.getElementById('ended-overlay').classList.remove('hidden');
+            }
+        });
+
+        socket.on('stream_like_update', (data) => {
+            if (data.stream_id == currentStreamId) {
+                // Show like animation
+                const likeBtn = document.querySelector('button[onclick="toggleLike()"]');
+                likeBtn.classList.add('animate-pulse');
+                setTimeout(() => likeBtn.classList.remove('animate-pulse'), 1000);
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', async () => {
+            if (currentStreamId) {
+                await fetch(`${API_URL}/api/live/leave/${currentStreamId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    keepalive: true // Ensure request completes
+                });
+            }
+        });
+
+        // Initialize
+        window.addEventListener('load', loadStream);
+
+        // Handle Enter key in chat
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    </script>
+</body>
+</html>

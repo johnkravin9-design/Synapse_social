@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize Profile - Synapse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .widget {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 15px;
+            cursor: move;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+        }
+        .widget:hover {
+            border-color: #EC4899;
+            transform: translateY(-2px);
+        }
+        .widget.dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+        }
+        .widget-placeholder {
+            border: 2px dashed rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.02);
+            border-radius: 15px;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .widget-item {
+            transition: all 0.3s ease;
+        }
+        .widget-item:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">🎨 Design Your Profile</h1>
+            <p class="text-xl text-white/80">Drag and drop widgets to create your unique digital space</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Widget Library -->
+            <div class="lg:col-span-1">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 sticky top-4">
+                    <h3 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-puzzle-piece mr-3"></i>
+                        Widget Library
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Now Playing Widget -->
+                        <div class="widget-item bg-white/5 p-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10" 
+                             draggable="true" data-type="now_playing">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-music text-pink-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Now Playing</p>
+                                    <p class="text-sm text-white/60">Show your current music</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mood Widget -->
+                        <div class="widget-item bg-white/5 p-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10" 
+                             draggable="true" data-type="mood">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-smile text-yellow-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Current Mood</p>
+                                    <p class="text-sm text-white/60">Share your vibe</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Supporters Widget -->
+                        <div class="widget-item bg-white/5 p-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10" 
+                             draggable="true" data-type="supporters">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-heart text-red-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Top Supporters</p>
+                                    <p class="text-sm text-white/60">Your biggest fans</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bio Video Widget -->
+                        <div class="widget-item bg-white/5 p-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10" 
+                             draggable="true" data-type="bio_video">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-video text-blue-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold">Bio Video</p>
+                                    <p class="text-sm text-white/60">Introduce yourself</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NFT Gallery Widget -->
+                        <div class="widget-item bg-white/5 p-4 rounded-xl cursor-pointer hover:bg-white/10 transition-all border border-white/10" 
+                             draggable="true" data-type="nft_gallery">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-image text-green-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold">NFT Gallery</p>
+                                    <p class="text-sm text-white/60">Showcase collection</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-8 pt-6 border-t border-white/20">
+                        <h4 class="font-bold mb-4 flex items-center">
+                            <i class="fas fa-bolt mr-2"></i>
+                            Quick Actions
+                        </h4>
+                        <div class="space-y-2">
+                            <button onclick="addSampleLayout()" class="w-full text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
+                                <i class="fas fa-magic mr-2"></i>Apply Sample Layout
+                            </button>
+                            <button onclick="clearAllWidgets()" class="w-full text-left p-3 rounded-lg bg-white/5 hover:bg-white/10 transition text-red-400">
+                                <i class="fas fa-trash mr-2"></i>Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Canvas -->
+            <div class="lg:col-span-3">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 min-h-[600px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold">Your Profile Canvas</h3>
+                            <p class="text-white/60">Drag widgets here and arrange them as you like</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="previewProfile()" class="bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full font-bold transition flex items-center">
+                                <i class="fas fa-eye mr-2"></i>Preview
+                            </button>
+                            <button onclick="saveLayout()" class="bg-gradient-to-r from-pink-500 to-purple-500 px-6 py-2 rounded-full font-bold hover:from-pink-600 hover:to-purple-600 transition flex items-center">
+                                <i class="fas fa-save mr-2"></i>Save Layout
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="profile-canvas" class="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[500px] p-6 bg-black/20 rounded-xl relative">
+                        <!-- Widgets will be placed here dynamically -->
+                        <div id="canvas-placeholder" class="col-span-2 text-center py-20 text-white/40 widget-placeholder">
+                            <i class="fas fa-th-large text-5xl mb-4"></i>
+                            <p class="text-xl">Drag widgets here to start building</p>
+                            <p class="text-sm mt-2">Your creative space awaits!</p>
+                        </div>
+                    </div>
+
+                    <!-- Layout Stats -->
+                    <div class="mt-6 flex justify-between items-center text-sm text-white/60">
+                        <div id="widget-count">
+                            <i class="fas fa-cube mr-1"></i>
+                            <span>0 widgets placed</span>
+                        </div>
+                        <div>
+                            <span id="auto-save-status">All changes saved</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mood Modal -->
+    <div id="mood-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+        <div class="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-4">Set Your Mood</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">How are you feeling?</label>
+                    <input type="text" id="mood-input" placeholder="Excited, Creative, Chill..." 
+                           class="w-full bg-white/10 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Choose an emoji:</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="😊">😊</button>
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="🎉">🎉</button>
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="💫">💫</button>
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="🔥">🔥</button>
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="🌙">🌙</button>
+                        <button class="emoji-btn p-2 rounded-lg hover:bg-white/10 text-2xl" data-emoji="🎨">🎨</button>
+                    </div>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button onclick="closeMoodModal()" class="flex-1 bg-white/10 hover:bg-white/20 py-2 rounded-lg transition">
+                        Cancel
+                    </button>
+                    <button onclick="saveMood()" class="flex-1 bg-white hover:bg-white/90 text-purple-600 py-2 rounded-lg font-bold transition">
+                        Save Mood
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let draggedWidget = null;
+        let currentEditingWidget = null;
+
+        // Initialize the profile builder
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDragAndDrop();
+            loadSavedLayout();
+        });
+
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+
+        function initializeDragAndDrop() {
+            const widgetItems = document.querySelectorAll('.widget-item');
+            const canvas = document.getElementById('profile-canvas');
+
+            widgetItems.forEach(widget => {
+                widget.addEventListener('dragstart', function(e) {
+                    draggedWidget = this.dataset.type;
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', this.dataset.type);
+                });
+
+                widget.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+            });
+
+            canvas.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('bg-purple-500/10');
+            });
+
+            canvas.addEventListener('dragleave', function() {
+                this.classList.remove('bg-purple-500/10');
+            });
+
+            canvas.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('bg-purple-500/10');
+                
+                const widgetType = e.dataTransfer.getData('text/plain');
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                addWidgetToCanvas(widgetType, x, y);
+            });
+        }
+
+        function addWidgetToCanvas(type, x, y) {
+            const canvas = document.getElementById('profile-canvas');
+            const placeholder = document.getElementById('canvas-placeholder');
+            
+            // Remove placeholder if it exists
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            const widgetId = 'widget-' + Date.now();
+            const widget = document.createElement('div');
+            widget.className = 'widget rounded-xl p-4 relative group';
+            widget.id = widgetId;
+            widget.dataset.type = type;
+            widget.style.position = 'absolute';
+            widget.style.left = Math.max(0, x - 150) + 'px';
+            widget.style.top = Math.max(0, y - 75) + 'px';
+            widget.style.width = '300px';
+            widget.style.zIndex = '10';
+
+            // Add widget content based on type
+            switch(type) {
+                case 'now_playing':
+                    widget.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-lg flex items-center">
+                                <i class="fas fa-music mr-2 text-pink-400"></i>Now Playing
+                            </h4>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editWidget('${widgetId}')" class="text-white/60 hover:text-white">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <button onclick="removeWidget('${widgetId}')" class="text-white/60 hover:text-red-400">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center py-6">
+                            <div class="w-16 h-16 bg-white/10 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-music text-white/40 text-2xl"></i>
+                            </div>
+                            <p class="text-white/60 mb-2">No music playing</p>
+                            <button onclick="connectMusicService()" class="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded-lg text-sm font-bold transition">
+                                Connect Music
+                            </button>
+                        </div>
+                    `;
+                    break;
+                
+                case 'mood':
+                    widget.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-lg flex items-center">
+                                <i class="fas fa-smile mr-2 text-yellow-400"></i>Current Mood
+                            </h4>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editWidget('${widgetId}')" class="text-white/60 hover:text-white">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="removeWidget('${widgetId}')" class="text-white/60 hover:text-red-400">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center py-6 cursor-pointer" onclick="openMoodModal('${widgetId}')">
+                            <p class="text-4xl mb-2">😊</p>
+                            <p class="text-white/60">Tap to set mood</p>
+                        </div>
+                    `;
+                    break;
+                
+                case 'supporters':
+                    widget.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-lg flex items-center">
+                                <i class="fas fa-heart mr-2 text-red-400"></i>Top Supporters
+                            </h4>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="removeWidget('${widgetId}')" class="text-white/60 hover:text-red-400">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center py-6">
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                ${Array.from({length: 6}, (_, i) => `
+                                    <div class="aspect-square bg-white/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-user text-white/40"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <p class="text-white/60 text-sm">Your top supporters will appear here</p>
+                        </div>
+                    `;
+                    break;
+                
+                case 'bio_video':
+                    widget.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-lg flex items-center">
+                                <i class="fas fa-video mr-2 text-blue-400"></i>Bio Video
+                            </h4>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editWidget('${widgetId}')" class="text-white/60 hover:text-white">
+                                    <i class="fas fa-upload"></i>
+                                </button>
+                                <button onclick="removeWidget('${widgetId}')" class="text-white/60 hover:text-red-400">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center py-8">
+                            <div class="w-20 h-20 bg-white/10 rounded-xl mx-auto mb-3 flex items-center justify-center">
+                                <i class="fas fa-play text-white/40 text-2xl"></i>
+                            </div>
+                            <p class="text-white/60 mb-3">Upload your intro video</p>
+                            <button onclick="uploadBioVideo()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg text-sm font-bold transition">
+                                Upload Video
+                            </button>
+                        </div>
+                    `;
+                    break;
+                
+                case 'nft_gallery':
+                    widget.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-lg flex items-center">
+                                <i class="fas fa-image mr-2 text-green-400"></i>NFT Gallery
+                            </h4>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editWidget('${widgetId}')" class="text-white/60 hover:text-white">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button onclick="removeWidget('${widgetId}')" class="text-white/60 hover:text-red-400">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-center py-6">
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                ${Array.from({length: 4}, (_, i) => `
+                                    <div class="aspect-square bg-white/10 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-cube text-white/40"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <p class="text-white/60 text-sm">Connect your NFT collection</p>
+                        </div>
+                    `;
+                    break;
+            }
+
+            // Make widget draggable
+            makeWidgetDraggable(widget);
+            canvas.appendChild(widget);
+            updateWidgetCount();
+            autoSaveLayout();
+        }
+
+        function makeWidgetDraggable(widget) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            
+            widget.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target.closest('button')) return; // Don't drag if clicking buttons
+                
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                widget.style.zIndex = '20';
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                const newTop = widget.offsetTop - pos2;
+                const newLeft = widget.offsetLeft - pos1;
+                
+                // Keep within canvas bounds
+                const canvas = document.getElementById('profile-canvas');
+                const maxTop = canvas.offsetHeight - widget.offsetHeight;
+                const maxLeft = canvas.offsetWidth - widget.offsetWidth;
+                
+                widget.style.top = Math.max(0, Math.min(newTop, maxTop)) + "px";
+                widget.style.left = Math.max(0, Math.min(newLeft, maxLeft)) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                widget.style.zIndex = '10';
+                autoSaveLayout();
+            }
+        }
+
+        function removeWidget(widgetId) {
+            const widget = document.getElementById(widgetId);
+            if (widget) {
+                widget.remove();
+                updateWidgetCount();
+                autoSaveLayout();
+                
+                // Show placeholder if no widgets left
+                const canvas = document.getElementById('profile-canvas');
+                if (canvas.children.length === 0) {
+                    canvas.innerHTML = `
+                        <div id="canvas-placeholder" class="col-span-2 text-center py-20 text-white/40 widget-placeholder">
+                            <i class="fas fa-th-large text-5xl mb-4"></i>
+                            <p class="text-xl">Drag widgets here to start building</p>
+                            <p class="text-sm mt-2">Your creative space awaits!</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function updateWidgetCount() {
+            const widgets = document.querySelectorAll('#profile-canvas .widget');
+            const countElement = document.getElementById('widget-count');
+            countElement.innerHTML = `<i class="fas fa-cube mr-1"></i><span>${widgets.length} widgets placed</span>`;
+        }
+
+        function openMoodModal(widgetId) {
+            currentEditingWidget = widgetId;
+            document.getElementById('mood-modal').classList.remove('hidden');
+        }
+
+        function closeMoodModal() {
+            document.getElementById('mood-modal').classList.add('hidden');
+            currentEditingWidget = null;
+        }
+
+        // Add emoji button handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.getElementById('mood-input').value = this.dataset.emoji;
+                });
+            });
+        });
+
+        async function saveMood() {
+            const mood = document.getElementById('mood-input').value;
+            const emoji = document.getElementById('mood-input').value; // Simple version
+            
+            if (mood) {
+                try {
+                    const response = await fetch(`${API_URL}/api/profile/mood`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                        },
+                        body: JSON.stringify({
+                            mood: mood,
+                            emoji: emoji
+                        })
+                    });
+
+                    if (response.ok) {
+                        showNotification('Mood updated successfully!', 'success');
+                        closeMoodModal();
+                    }
+                } catch (error) {
+                    console.error('Error setting mood:', error);
+                    showNotification('Failed to update mood', 'error');
+                }
+            }
+        }
+
+        function editWidget(widgetId) {
+            const widget = document.getElementById(widgetId);
+            const type = widget.dataset.type;
+            alert(`Editing ${type} widget - customization options coming soon!`);
+        }
+
+        function connectMusicService() {
+            alert('Music service integration coming soon! Spotify, Apple Music, and more will be available.');
+        }
+
+        function uploadBioVideo() {
+            alert('Video upload feature coming soon! You\'ll be able to add a personal introduction video.');
+        }
+
+        async function saveLayout() {
+            const widgets = document.querySelectorAll('#profile-canvas .widget');
+            const layout = [];
+
+            widgets.forEach(widget => {
+                layout.push({
+                    type: widget.dataset.type,
+                    position: {
+                        x: parseInt(widget.style.left) || 0,
+                        y: parseInt(widget.style.top) || 0
+                    },
+                    size: {
+                        width: parseInt(widget.style.width) || 300,
+                        height: widget.offsetHeight
+                    },
+                    data: {} // Additional widget data
+                });
+            });
+
+            try {
+                const response = await fetch(`${API_URL}/api/profile/widgets`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify(layout)
+                });
+
+                if (response.ok) {
+                    showNotification('Profile layout saved successfully!', 'success');
+                    updateAutoSaveStatus('All changes saved');
+                } else {
+                    throw new Error('Failed to save layout');
+                }
+            } catch (error) {
+                console.error('Error saving layout:', error);
+                showNotification('Failed to save layout', 'error');
+            }
+        }
+
+        async function loadSavedLayout() {
+            try {
+                const response = await fetch(`${API_URL}/api/profile/widgets`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Implementation for loading saved layout would go here
+                    console.log('Loaded saved layout:', data);
+                }
+            } catch (error) {
+                console.error('Error loading layout:', error);
+            }
+        }
+
+        function autoSaveLayout() {
+            updateAutoSaveStatus('Saving...');
+            // Debounced auto-save would go here
+            setTimeout(() => {
+                updateAutoSaveStatus('All changes saved');
+            }, 1000);
+        }
+
+        function updateAutoSaveStatus(status) {
+            document.getElementById('auto-save-status').textContent = status;
+        }
+
+        function previewProfile() {
+            window.open('/profile/me', '_blank');
+        }
+
+        function addSampleLayout() {
+            // Clear existing widgets
+            clearAllWidgets();
+            
+            // Add sample widgets at nice positions
+            setTimeout(() => addWidgetToCanvas('now_playing', 50, 50), 100);
+            setTimeout(() => addWidgetToCanvas('mood', 400, 50), 200);
+            setTimeout(() => addWidgetToCanvas('supporters', 50, 250), 300);
+            
+            showNotification('Sample layout applied! Customize as you like.', 'success');
+        }
+
+        function clearAllWidgets() {
+            const canvas = document.getElementById('profile-canvas');
+            const widgets = canvas.querySelectorAll('.widget');
+            widgets.forEach(widget => widget.remove());
+            
+            // Restore placeholder
+            if (canvas.children.length === 0) {
+                canvas.innerHTML = `
+                    <div id="canvas-placeholder" class="col-span-2 text-center py-20 text-white/40 widget-placeholder">
+                        <i class="fas fa-th-large text-5xl mb-4"></i>
+                        <p class="text-xl">Drag widgets here to start building</p>
+                        <p class="text-sm mt-2">Your creative space awaits!</p>
+                    </div>
+                `;
+            }
+            
+            updateWidgetCount();
+            showNotification('All widgets cleared', 'info');
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification implementation
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg z-50 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

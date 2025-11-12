@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Feed - Synapse{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left Sidebar -->
+    <div class="lg:col-span-3 space-y-4">
+        <!-- Live Activity -->
+        <div class="glass-effect rounded-xl p-4">
+            <h3 class="font-bold text-lg mb-4 flex items-center">
+                <i class="fas fa-bolt text-yellow-400 mr-2"></i>
+                Live Activity
+            </h3>
+            <div id="live-activity" class="space-y-3"></div>
+        </div>
+
+        <!-- Invite System -->
+        <div class="bg-gradient-to-br from-yellow-600 to-orange-600 rounded-xl p-4">
+            <h3 class="font-bold text-lg mb-2 flex items-center">
+                <i class="fas fa-gift mr-2"></i>
+                Invite & Earn
+            </h3>
+            <p class="text-sm mb-3">Get 100 points per friend!</p>
+            <div class="bg-black bg-opacity-30 rounded p-2 mb-3 text-center font-mono text-sm">
+                SYNAPSE-ABC123
+            </div>
+            <button onclick="copyInviteLink()" class="w-full bg-white text-orange-600 font-bold py-2 rounded-lg hover:bg-opacity-90 transition">
+                Copy Invite Link
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Feed -->
+    <div class="lg:col-span-6 space-y-4">
+        <!-- Stories -->
+        <div class="glass-effect rounded-xl p-4">
+            <div class="flex items-center space-x-4 overflow-x-auto pb-2">
+                <!-- Create Story -->
+                <div class="flex-shrink-0 text-center">
+                    <button onclick="openCreateStory()" class="story-circle">
+                        <div class="story-inner w-16 h-16 flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 rounded-full border-2 border-white">
+                            <i class="fas fa-plus text-2xl text-white"></i>
+                        </div>
+                    </button>
+                    <p class="text-xs mt-1">Create</p>
+                </div>
+
+                <!-- Story Items -->
+                <div id="stories-container" class="flex space-x-4"></div>
+            </div>
+        </div>
+
+        <!-- Create Post -->
+        <div class="glass-effect rounded-xl p-4">
+            <div class="flex space-x-3">
+                <span class="text-3xl">🚀</span>
+                <div class="flex-1">
+                    <textarea
+                        id="post-content"
+                        placeholder="What's on your mind?"
+                        class="w-full bg-white bg-opacity-10 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                        rows="3"
+                    ></textarea>
+
+                    <div class="flex items-center justify-between mt-3">
+                        <div class="flex space-x-2">
+                            <button class="p-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                                <i class="fas fa-image text-white"></i>
+                            </button>
+                            <button class="p-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                                <i class="fas fa-users text-white"></i>
+                            </button>
+                        </div>
+                        <button onclick="createPost()" class="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-2 px-6 rounded-lg hover:opacity-90 transition">
+                            Post
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posts Feed -->
+        <div id="posts-container" class="space-y-4"></div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="lg:col-span-3 space-y-4">
+        <!-- Trending -->
+        <div class="glass-effect rounded-xl p-4">
+            <h3 class="font-bold text-lg mb-4">🔥 Trending</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm hover:bg-white hover:bg-opacity-10 p-2 rounded cursor-pointer transition">
+                    <span>#Innovation</span>
+                    <span class="text-gray-400">234K</span>
+                </div>
+                <div class="flex justify-between text-sm hover:bg-white hover:bg-opacity-10 p-2 rounded cursor-pointer transition">
+                    <span>#Startup</span>
+                    <span class="text-gray-400">189K</span>
+                </div>
+                <div class="flex justify-between text-sm hover:bg-white hover:bg-opacity-10 p-2 rounded cursor-pointer transition">
+                    <span>#AI</span>
+                    <span class="text-gray-400">567K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggested Friends -->
+        <div class="glass-effect rounded-xl p-4">
+            <h3 class="font-bold text-lg mb-4">Suggested Friends</h3>
+            <div id="suggestions-container" class="space-y-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Story Viewer Modal -->
+<div id="story-modal" class="hidden fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center">
+    <button onclick="closeStoryModal()" class="absolute top-4 right-4 text-white p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition">
+        <i class="fas fa-times text-2xl"></i>
+    </button>
+
+    <button onclick="prevStory()" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition">
+        <i class="fas fa-chevron-left text-2xl"></i>
+    </button>
+
+    <button onclick="nextStory()" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition">
+        <i class="fas fa-chevron-right text-2xl"></i>
+    </button>
+
+    <div id="story-content" class="max-w-md w-full h-[600px] bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white">
+        <!-- Story content will be inserted here -->
+    </div>
+</div>
+
+<script>
+    let posts = [];
+    let stories = [];
+    let currentStoryIndex = 0;
+
+    // Load feed on page load
+    window.addEventListener('load', async () => {
+        await loadStories();
+        await loadPosts();
+        startLiveActivity();
+    });
+
+    async function loadStories() {
+        try {
+            const result = await apiRequest('/api/stories', 'GET');
+            stories = result.stories;
+            renderStories();
+        } catch (error) {
+            console.error('Error loading stories:', error);
+        }
+    }
+
+    function renderStories() {
+        const container = document.getElementById('stories-container');
+        container.innerHTML = stories.map((story, index) => `
+            <div class="flex-shrink-0 text-center">
+                <button onclick="openStory(${index})" class="story-circle">
+                    <div class="story-inner w-16 h-16 flex items-center justify-center bg-gradient-to-br from-blue-500 to-green-500 rounded-full border-2 border-white">
+                        ${story.user.avatar || '👤'}
+                    </div>
+                </button>
+                <p class="text-xs mt-1 truncate w-16">${story.user.name || 'User'}</p>
+            </div>
+        `).join('');
+    }
+
+    function openStory(index) {
+        currentStoryIndex = index;
+        document.getElementById('story-modal').classList.remove('hidden');
+        renderCurrentStory();
+    }
+
+    function renderCurrentStory() {
+        const storyContent = document.getElementById('story-content');
+        const story = stories[currentStoryIndex];
+        
+        if (story) {
+            storyContent.innerHTML = `
+                <div class="text-center p-8">
+                    <div class="text-6xl mb-4">${story.user.avatar || '👤'}</div>
+                    <h3 class="text-2xl font-bold mb-2">${story.user.name || 'User'}</h3>
+                    <p class="text-lg">${story.content || 'No content'}</p>
+                </div>
+            `;
+        }
+    }
+
+    function closeStoryModal() {
+        document.getElementById('story-modal').classList.add('hidden');
+    }
+
+    function prevStory() {
+        if (currentStoryIndex > 0) {
+            currentStoryIndex--;
+            renderCurrentStory();
+        }
+    }
+
+    function nextStory() {
+        if (currentStoryIndex < stories.length - 1) {
+            currentStoryIndex++;
+            renderCurrentStory();
+        } else {
+            closeStoryModal();
+        }
+    }
+
+    async function loadPosts() {
+        try {
+            const result = await apiRequest('/api/posts', 'GET');
+            posts = result.posts;
+            renderPosts();
+        } catch (error) {
+            console.error('Error loading posts:', error);
+        }
+    }
+
+    function renderPosts() {
+        const container = document.getElementById('posts-container');
+        container.innerHTML = posts.map(post => `
+            <div class="glass-effect rounded-xl p-4">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold">
+                        ${post.user.avatar || '👤'}
+                    </div>
+                    <div>
+                        <h4 class="font-bold">${post.user.name || 'User'}</h4>
+                        <p class="text-xs text-gray-400">${new Date(post.timestamp).toLocaleString()}</p>
+                    </div>
+                </div>
+                <p class="mb-3">${post.content}</p>
+                <div class="flex space-x-4 text-sm text-gray-400">
+                    <button class="flex items-center space-x-1 hover:text-red-500 transition">
+                        <i class="fas fa-heart"></i>
+                        <span>${post.likes || 0}</span>
+                    </button>
+                    <button class="flex items-center space-x-1 hover:text-blue-500 transition">
+                        <i class="fas fa-comment"></i>
+                        <span>${post.comments || 0}</span>
+                    </button>
+                    <button class="flex items-center space-x-1 hover:text-green-500 transition">
+                        <i class="fas fa-share"></i>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function createPost() {
+        const content = document.getElementById('post-content').value.trim();
+        if (!content) return;
+
+        try {
+            const result = await apiRequest('/api/posts', 'POST', { content });
+            document.getElementById('post-content').value = '';
+            await loadPosts(); // Reload posts
+        } catch (error) {
+            console.error('Error creating post:', error);
+        }
+    }
+
+    function startLiveActivity() {
+        // Simulate live activity updates
+        setInterval(() => {
+            const activities = [
+                'Sarah just shared a new post',
+                'Mike commented on your photo',
+                'Alex joined the platform',
+                'Emma started a live stream'
+            ];
+            const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+            
+            const activityDiv = document.getElementById('live-activity');
+            const activityElement = document.createElement('div');
+            activityElement.className = 'flex items-center space-x-2 text-sm animate-pulse';
+            activityElement.innerHTML = `
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>${randomActivity}</span>
+            `;
+            
+            activityDiv.insertBefore(activityElement, activityDiv.firstChild);
+            
+            // Keep only last 3 activities
+            if (activityDiv.children.length > 3) {
+                activityDiv.removeChild(activityDiv.lastChild);
+            }
+        }, 5000);
+    }
+
+    function copyInviteLink() {
+        navigator.clipboard.writeText('SYNAPSE-ABC123').then(() => {
+            alert('Invite link copied to clipboard!');
+        });
+    }
+
+    function openCreateStory() {
+        alert('Create story functionality would open here');
+    }
+
+    // API request helper function
+    async function apiRequest(url, method = 'GET', data = null) {
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        };
+
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(url, options);
+        return await response.json();
+    }
+</script>
+
+<style>
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .story-circle {
+        transition: transform 0.2s;
+    }
+    
+    .story-circle:hover {
+        transform: scale(1.05);
+    }
+    
+    .story-inner {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    }
+</style>
+{% endblock %}

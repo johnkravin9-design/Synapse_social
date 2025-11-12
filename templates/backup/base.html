@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Synapse - Next-Gen Social Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: #ec4899;
+            border-radius: 50%;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 2px 6px;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile Bottom Navigation */
+        .mobile-nav {
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    
+    <!-- Desktop/Tablet Top Navigation Bar -->
+    <nav class="glass-effect sticky top-0 z-50 border-b border-purple-500 hidden md:block">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <a href="/feed" class="flex items-center space-x-3 hover:opacity-80 transition">
+                    <i class="fas fa-bolt text-yellow-400 text-3xl"></i>
+                    <span class="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent">
+                        Synapse
+                    </span>
+                </a>
+                
+                <!-- Main Navigation Links -->
+                <div class="flex items-center space-x-8">
+                    <a href="/feed" class="nav-item flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-home text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Home</span>
+                    </a>
+                    
+                    <a href="/explore" class="nav-item flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-compass text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Explore</span>
+                    </a>
+                    
+                    <a href="/reels" class="nav-item flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-film text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Reels</span>
+                    </a>
+                    
+                    <a href="/messages" class="nav-item relative flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-envelope text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Messages</span>
+                        <span class="notification-badge" id="message-badge" style="display: none;">0</span>
+                    </a>
+                    
+                    <a href="/notifications" class="nav-item relative flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-bell text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Alerts</span>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </a>
+                    
+                    <a href="/create" class="nav-item flex flex-col items-center text-gray-300 hover:text-white transition">
+                        <i class="fas fa-plus-square text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Create</span>
+                    </a>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-md mx-8">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="desktop-search"
+                            placeholder="Search Synapse..." 
+                            class="w-full bg-white bg-opacity-10 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        >
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <!-- User Menu -->
+                <div class="flex items-center space-x-4">
+                    <a href="/saved" class="text-gray-300 hover:text-white transition" title="Saved">
+                        <i class="fas fa-bookmark text-xl"></i>
+                    </a>
+                    
+                    <a href="/settings" class="text-gray-300 hover:text-white transition" title="Settings">
+                        <i class="fas fa-cog text-xl"></i>
+                    </a>
+                    
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 rounded-full hover:from-purple-700 hover:to-pink-700 transition">
+                            <span id="nav-avatar" class="text-2xl">🚀</span>
+                            <div class="hidden lg:block text-left">
+                                <p id="nav-username" class="text-sm font-bold leading-tight">User</p>
+                                <p class="text-xs text-yellow-300 leading-tight">⚡ <span id="nav-points">0</span> pts</p>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-2xl border border-purple-500 overflow-hidden">
+                            <a href="/profile/me" class="block px-4 py-3 hover:bg-gray-800 transition border-b border-gray-800">
+                                <i class="fas fa-user mr-3 text-pink-400"></i>My Profile
+                            </a>
+                            <a href="/saved" class="block px-4 py-3 hover:bg-gray-800 transition border-b border-gray-800">
+                                <i class="fas fa-bookmark mr-3 text-yellow-400"></i>Saved Posts
+                            </a>
+                            <a href="/settings" class="block px-4 py-3 hover:bg-gray-800 transition border-b border-gray-800">
+                                <i class="fas fa-cog mr-3 text-blue-400"></i>Settings
+                            </a>
+                            <button onclick="logout()" class="w-full text-left px-4 py-3 hover:bg-gray-800 transition text-red-400">
+                                <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Mobile Top Bar -->
+    <div class="md:hidden glass-effect border-b border-purple-500 sticky top-0 z-50">
+        <div class="flex items-center justify-between px-4 py-3">
+            <a href="/feed" class="flex items-center space-x-2">
+                <i class="fas fa-bolt text-yellow-400 text-2xl"></i>
+                <span class="text-xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent">
+                    Synapse
+                </span>
+            </a>
+            
+            <div class="flex items-center space-x-4">
+                <button onclick="openMobileSearch()" class="text-white">
+                    <i class="fas fa-search text-xl"></i>
+                </button>
+                
+                <a href="/notifications" class="relative text-white">
+                    <i class="fas fa-bell text-xl"></i>
+                    <span class="notification-badge" id="mobile-notification-badge" style="display: none;">0</span>
+                </a>
+                
+                <a href="/messages" class="relative text-white">
+                    <i class="fas fa-envelope text-xl"></i>
+                    <span class="notification-badge" id="mobile-message-badge" style="display: none;">0</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Search Overlay -->
+    <div id="mobile-search-overlay" class="hidden fixed inset-0 bg-black/95 z-50 md:hidden">
+        <div class="p-4">
+            <div class="flex items-center space-x-2 mb-4">
+                <button onclick="closeMobileSearch()" class="text-white">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <input 
+                    type="text" 
+                    id="mobile-search"
+                    placeholder="Search..." 
+                    class="flex-1 bg-white/10 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    autofocus
+                >
+            </div>
+            <div id="mobile-search-results" class="space-y-2">
+                <!-- Search results will appear here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="pb-20 md:pb-0">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-lg border-t border-purple-500 z-40">
+        <div class="flex justify-around items-center h-16">
+            <a href="/feed" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-300 hover:text-white transition">
+                <i class="fas fa-home text-2xl"></i>
+                <span class="text-xs mt-1">Home</span>
+            </a>
+            
+            <a href="/explore" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-300 hover:text-white transition">
+                <i class="fas fa-compass text-2xl"></i>
+                <span class="text-xs mt-1">Explore</span>
+            </a>
+            
+            <a href="/create" class="flex flex-col items-center justify-center flex-1">
+                <div class="bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl p-2 -mt-6 shadow-lg">
+                    <i class="fas fa-plus text-2xl text-white"></i>
+                </div>
+            </a>
+            
+            <a href="/reels" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-300 hover:text-white transition">
+                <i class="fas fa-film text-2xl"></i>
+                <span class="text-xs mt-1">Reels</span>
+            </a>
+            
+            <a href="/profile/me" class="nav-item flex flex-col items-center justify-center flex-1 text-gray-300 hover:text-white transition">
+                <span id="mobile-avatar" class="text-2xl">🚀</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-24 md:bottom-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+        <div class="text-center">
+            <i class="fas fa-bolt text-yellow-400 text-6xl pulse-animation"></i>
+            <p class="mt-4 text-xl">Loading...</p>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Global Configuration
+        const API_URL = 'http://localhost:5000';
+        const socket = io(API_URL);
+        
+        // Get current user
+        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        
+        // Update navigation with user info
+        if (currentUser.username) {
+            document.getElementById('nav-avatar').textContent = currentUser.avatar || '🚀';
+            document.getElementById('nav-username').textContent = currentUser.username;
+            document.getElementById('nav-points').textContent = currentUser.points || 0;
+            document.getElementById('mobile-avatar').textContent = currentUser.avatar || '🚀';
+        }
+        
+        // Highlight active page
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-item').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && currentPath.startsWith(href) && href !== '/') {
+                link.classList.add('active');
+                link.classList.add('text-pink-500');
+                link.classList.remove('text-gray-300');
+            }
+        });
+        
+        // Get auth token
+        function getToken() {
+            return localStorage.getItem('synapse_token');
+        }
+        
+        // Toggle user menu
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('user-menu');
+            const button = event.target.closest('button');
+            if (!menu.contains(e.target) && button?.onclick !== toggleUserMenu) {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        // Mobile search
+        function openMobileSearch() {
+            document.getElementById('mobile-search-overlay').classList.remove('hidden');
+        }
+        
+        function closeMobileSearch() {
+            document.getElementById('mobile-search-overlay').classList.add('hidden');
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `slide-in px-6 py-4 rounded-lg shadow-lg ${
+                type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                type === 'warning' ? 'bg-yellow-500' :
+                'bg-blue-500'
+            }`;
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-${
+                        type === 'success' ? 'check-circle' :
+                        type === 'error' ? 'exclamation-circle' :
+                        type === 'warning' ? 'exclamation-triangle' :
+                        'info-circle'
+                    }"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Show loading
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+        
+        // Hide loading
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+        
+        // API Request Helper
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            showLoading();
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                const token = getToken();
+                if (token) {
+                    options.headers['Authorization'] = `Bearer ${token}`;
+                }
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const result = await response.json();
+                
+                hideLoading();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Request failed');
+                }
+                
+                return result;
+            } catch (error) {
+                hideLoading();
+                showToast(error.message, 'error');
+                throw error;
+            }
+        }
+        
+        // Load notification counts
+        async function loadNotificationCounts() {
+            try {
+                const notifications = await apiRequest('/api/notifications');
+                const unreadCount = notifications.notifications.filter(n => !n.is_read).length;
+                
+                if (unreadCount > 0) {
+                    document.getElementById('notification-badge').textContent = unreadCount;
+                    document.getElementById('notification-badge').style.display = 'block';
+                    document.getElementById('mobile-notification-badge').textContent = unreadCount;
+                    document.getElementById('mobile-notification-badge').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading notification counts:', error);
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('synapse_token');
+                localStorage.removeItem('synapse_user');
+                window.location.href = '/login';
+            }
+        }
+        
+        // Socket.IO Events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            if (currentUser.id) {
+                socket.emit('user_online', { user_id: currentUser.id });
+            }
+        });
+        
+        socket.on('new_post', (data) => {
+            showToast(`${data.user.name} posted something new!`, 'info');
+        });
+        
+        socket.on('new_story', (data) => {
+            showToast(`${data.user} posted a new story!`, 'info');
+        });
+        
+        socket.on('new_notification', (data) => {
+            loadNotificationCounts();
+            showToast(data.content, 'info');
+        });
+        
+        // Load counts on page load
+        if (getToken()) {
+            loadNotificationCounts();
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
