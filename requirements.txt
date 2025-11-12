@@ -1,3 +1,8 @@
+# Editable Git packages
+-e git+https://github.com/johnkravin9-design/multilang-boilerplate.git@60189b8d396fc2dd9b261addd36039db0ec6a8b1#egg=multilang_boilerplate
+-e git+https://github.com/johnkravin9-design/trend-idea-gen.git@3d177a0476c71e39d6921e63695a161926d1e685#egg=trend_idea_gen
+
+# Core packages
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.2
 aiohttp-retry==2.9.1
@@ -28,7 +33,7 @@ cloudinary==1.40.0
 colorama==0.4.6
 constantly==23.10.4
 cookiecutter==2.6.0
-cryptography==41.0.2
+cryptography>=45.0.7,<47
 daphne==4.2.1
 distro==1.9.0
 Django==5.2.7
@@ -139,5 +144,3 @@ wsproto==1.2.0
 yarl==1.22.0
 zope.interface==8.0.1
 numpy==2.2.5
--e git+https://github.com/johnkravin9-design/multilang-boilerplate.git@60189b8d396fc2dd9b261addd36039db0ec6a8b1#egg=multilang_boilerplate
--e git+https://github.com/johnkravin9-design/trend-idea-gen.git@3d177a0476c71e39d6921e63695a161926d1e685#egg=trend_idea_gen
