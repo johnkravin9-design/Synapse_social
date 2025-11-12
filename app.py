@@ -4365,6 +4365,7 @@ with app.app_context():
         print("   Username: demo")
         print("   Password: demo123")
 
+
 if __name__ == '__main__':
     # Create database tables
     with app.app_context():
@@ -4388,8 +4389,9 @@ if __name__ == '__main__':
     print("   ❌ Advanced AI Features (Disabled)")
     
     print("\n🌐 Server Information:")
-    print("   Local: http://127.0.0.1:5000")
-    print("   Network: http://0.0.0.0:5000")
+    port = int(os.environ.get('PORT', 5000))
+    print(f"   Local: http://127.0.0.1:{port}")
+    print(f"   Network: http://0.0.0.0:{port}")
     
     print("\n📱 Available Pages:")
     print("   / - Landing page")
@@ -4404,5 +4406,6 @@ if __name__ == '__main__':
     print("\n🔧 API Endpoints: /api/*")
     print("="*50 + "\n")
 
-    # Use the standard Flask-SocketIO runner
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # Use environment port for production
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug_mode, allow_unsafe_werkzeug=True)
