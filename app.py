@@ -1,51 +1,47 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
-
-from flask import Flask, request, jsonify, render_template, send_from_directory, session
-from werkzeug.utils import secure_filename
-from flask_migrate import Migrate
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail, Message
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO, emit, join_room, leave_room
-import jwt
 import secrets
 import random
+import base64
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-import base64
 
-# Make Google Auth optional for deployment
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask
+from flask_cors import CORS
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_socketio import SocketIO
+from dotenv import load_dotenv
+load_dotenv()  # loads variables from .env into environment
+import os
+import jwt
+import json
+# Optional third-party imports (wrapped to avoid hard crash if missing)
 try:
-    from google.oauth2 import id_token
-    from google.auth.transport import requests as google_requests
-    GOOGLE_AUTH_AVAILABLE = True
-except ImportError:
-    GOOGLE_AUTH_AVAILABLE = False
-    print("⚠️  Google Auth not available - Google login disabled")
-    
-    # Create mock classes
-    class MockIdToken:
-        def verify_oauth2_token(self, token, request, audience=None):
-            return None
-    id_token = MockIdToken()
-    google_requests = None
+    from google_auth_oauthlib.flow import Flow
+    GOOGLE_OAUTHLIB_AVAILABLE = True
+except Exception:
+    Flow = None
+    GOOGLE_OAUTHLIB_AVAILABLE = False
 
+# Flask app
 app = Flask(__name__)
+
+# Use a stable secret key if provided, otherwise generate one (don't log it)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
-# Database configuration
+# Database config (keep simple default for local dev)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///synapse.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Email Configuration (optional)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('johnkravin9@gmail.com', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('bqvhexpqbnztnmww', '')
+# Mail config — read credentials from proper env vars (do NOT put raw credentials in code)
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')  # e.g., "no-reply@yourdomain.com"
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # set this in env or secrets manager
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -53,15 +49,52 @@ migrate = Migrate(app, db)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Initialize Mail (with error handling)
-try:
-    mail = Mail(app)
-    MAIL_AVAILABLE = True
-except Exception as e:
-    MAIL_AVAILABLE = False
-    print(f"⚠️  Email not configured: {e}")
-    mail = None
+# Initialize Mail only when credentials present
+mail = None
+MAIL_AVAILABLE = False
+if app.config['MAIL_USERNAME'] and app.config['MAIL_PASSWORD']:
+    try:
+        mail = Mail(app)
+        MAIL_AVAILABLE = True
+    except Exception as e:
+        MAIL_AVAILABLE = False
+        # Avoid leaking sensitive info in logs
+        print("⚠️ Email not fully configured; Mail disabled.")
+else:
+    print("ℹ️ Mail credentials not provided — Mail disabled.")
 
+# Google OAuth optional initialization.
+# Requirements to enable:
+#  1) google-auth-oauthlib installed
+#  2) path to client_secrets JSON file set in GOOGLE_CLIENT_SECRETS_FILE env var
+#  3) the file must exist and be readable
+GOOGLE_AUTH_FLOW = None
+GOOGLE_AUTH_AVAILABLE = False
+if GOOGLE_OAUTHLIB_AVAILABLE:
+    client_secrets_path = os.environ.get("GOOGLE_CLIENT_SECRETS_FILE", "")
+    if client_secrets_path and os.path.isfile(client_secrets_path):
+        # Only set OAUTHLIB_INSECURE_TRANSPORT for local dev — do NOT use in production
+        if os.environ.get("FLASK_ENV", "production") != "production":
+            os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        try:
+            # Example scopes; update if you need more or less
+            scopes = [
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "openid",
+            ]
+            # Make redirect_uri configurable via env var for deploy flexibility
+            redirect_uri = os.environ.get("GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:5000/callback")
+            GOOGLE_AUTH_FLOW = Flow.from_client_secrets_file(client_secrets_path, scopes=scopes, redirect_uri=redirect_uri)
+            GOOGLE_AUTH_AVAILABLE = True
+            print("✅ Google Auth initialized.")
+        except Exception as e:
+            GOOGLE_AUTH_AVAILABLE = False
+            print("⚠️ Google Auth file present but initialization failed; Google login disabled.")
+    else:
+        print("ℹ️ Google client secrets not provided or file not found — Google login disabled.")
+else:
+    print("ℹ️ google-auth-oauthlib not installed — Google login disabled.")
 #
 #
 # ==================== DATABASE MODELS ====================
@@ -3455,8 +3488,8 @@ def handle_call_video_toggle(data):
 # ==================== WEB SOCKET EVENTS ====================
 
 @socketio.on('connect')
-def handle_connect():
-    print('Client connected')
+def handle_connect(auth=None):
+    print("Client connected to SocketIO")
     emit('connection_response', {'status': 'connected'})
 
 @socketio.on('disconnect')
@@ -4332,53 +4365,44 @@ with app.app_context():
         print("   Username: demo")
         print("   Password: demo123")
 
-
 if __name__ == '__main__':
     # Create database tables
     with app.app_context():
         db.create_all()
+        print(" Database initialized!")
     
     print("\n" + "="*50)
     print("🚀 SYNAPSE SOCIAL PLATFORM")
     print("="*50)
+    
     print("\n📧 Email Configuration:")
-    print(f"   Email: {app.config['MAIL_USERNAME']}")
+    print(f"   Email: {app.config.get('MAIL_USERNAME', 'Not configured')}")
     print(f"   Status: {'✅ Configured' if app.config.get('MAIL_PASSWORD') else '❌ Not configured'}")
     
-    print("\n🛠️  Cutting-Edge Features:")
-    print("   ✅ Ghost Mode & Privacy Controls")
-    print("   ✅ AR Reality Posts & Filters") 
-    print("   ✅ Life Moments with AI Mood Detection")
-    print("   ✅ Custom Profile Widgets & Layouts")
-    print("   ✅ Video Reactions & 360° Photos")
+    print("\n🛠️  Features Status:")
+    print("   ✅ Basic Authentication")
+    print("   ✅ Real-time Chat")
+    print("   ✅ Post Feed")
+    print("   ✅ User Profiles")
+    print("   ❌ Google Auth (Disabled)")
+    print("   ❌ Advanced AI Features (Disabled)")
     
     print("\n🌐 Server Information:")
-    port = int(os.environ.get('PORT', 5000))
-    print(f"   Local: http://127.0.0.1:{port}")
-    print(f"   Network: http://0.0.0.0:{port}")
+    print("   Local: http://127.0.0.1:5000")
+    print("   Network: http://0.0.0.0:5000")
     
     print("\n📱 Available Pages:")
     print("   / - Landing page")
-    print("   /register - Sign up") 
+    print("   /register - Sign up")
     print("   /login - Login")
     print("   /feed - Main feed")
-    print("   /moments - Life moments feed")
     print("   /explore - Discover")
-    print("   /reels - Short videos")
     print("   /messages - Direct messages")
-    print("   /notifications - Notifications")
     print("   /profile/<username> - User profile")
-    print("   /profile/builder - Custom profile builder")
-    print("   /saved - Saved posts")
     print("   /settings - Account settings")
     
     print("\n🔧 API Endpoints: /api/*")
-    print("   /api/privacy/settings - Ghost mode controls")
-    print("   /api/ar/filters - AR features")
-    print("   /api/moments - Life moments")
-    print("   /api/profile/widgets - Custom widgets")
     print("="*50 + "\n")
 
-    # Use environment port for production
-    debug_mode = os.environ.get('FLASK_ENV') == 'development'
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug_mode, allow_unsafe_werkzeug=True)
+    # Use the standard Flask-SocketIO runner
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

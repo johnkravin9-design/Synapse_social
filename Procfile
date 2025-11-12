@@ -1,1 +1,2 @@
-web: gunicorn -k eventlet -w 1 app:app
+# Procfile should contain:
+web: python app.py
