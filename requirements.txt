@@ -2,8 +2,11 @@ flask==2.3.3
 flask-sqlalchemy==3.0.5
 flask-socketio==5.3.6
 flask-cors==4.0.0
+flask-migrate==4.0.5
+flask-mail==0.9.1
 python-socketio==5.8.0
 python-engineio==4.7.1
 python-dotenv==1.0.0
 gunicorn==21.2.0
 pyjwt==2.8.0
+werkzeug==2.3.7

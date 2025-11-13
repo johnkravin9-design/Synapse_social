@@ -2,22 +2,21 @@ import os
 import secrets
 import random
 import base64
+import json
+import jwt
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
-from flask import Flask
-from flask_cors import CORS
-from flask_migrate import Migrate
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit
+from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_socketio import SocketIO
 from dotenv import load_dotenv
+
 load_dotenv()  # loads variables from .env into environment
-import os
-import jwt
-import json
+
 # Optional third-party imports (wrapped to avoid hard crash if missing)
 try:
     from google_auth_oauthlib.flow import Flow
@@ -41,19 +40,21 @@ app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')  # e.g., "no-reply@yourdomain.com"
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # set this in env or secrets manager
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # set this in env or secrets
 
 # Initialize extensions
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-#socketio = SocketIO(app, cors_allowed_origins="*")
 
-#socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-#socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
-
-#socketio = SocketIO(app, cors_allowed_origins="*")
+# Make flask-migrate optional (AFTER db is defined)
+try:
+    from flask_migrate import Migrate
+    migrate = Migrate(app, db)
+    print("✅ Database migrations enabled")
+except ImportError:
+    print("⚠️  flask-migrate not available - migrations disabled")
+    migrate = None
 
 # Initialize Mail only when credentials present
 mail = None
@@ -62,13 +63,12 @@ if app.config['MAIL_USERNAME'] and app.config['MAIL_PASSWORD']:
     try:
         mail = Mail(app)
         MAIL_AVAILABLE = True
+        print("✅ Email service configured")
     except Exception as e:
+        print(f"⚠️  Email configuration failed: {e}")
         MAIL_AVAILABLE = False
-        # Avoid leaking sensitive info in logs
-        print("⚠️ Email not fully configured; Mail disabled.")
 else:
-    print("ℹ️ Mail credentials not provided — Mail disabled.")
-
+    print("ℹ️  Mail credentials not provided — Mail disabled.")
 # Google OAuth optional initialization.
 # Requirements to enable:
 #  1) google-auth-oauthlib installed
