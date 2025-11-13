@@ -1,4 +1,4 @@
-import os
+-import os
 import secrets
 import random
 import base64
@@ -4373,42 +4373,6 @@ with app.app_context():
 
 
 
-if name == 'main':
-# Create database tables
-with app.app_context():
-db.create_all()
-print(" Database initialized!")
-
-print("\n" + "="*50)    
-print("🚀 SYNAPSE SOCIAL PLATFORM")    
-print("="*50)    
-
-print("\n📧 Email Configuration:")
-print(f"   Email: {app.config.get('MAIL_USERNAME', 'Not configured')}")
-print(f"   Status: {'✅ Configured' if app.config.get('MAIL_PASSWORD') else '❌ Not Configured'}")
-
-print("\n🛠️  Features Status:")    
-print("   ✅ Basic Authentication")    
-print("   ✅ Real-time Chat")    
-print("   ✅ Post Feed")    
-print("   ✅ User Profiles")    
-print("   ❌ Google Auth (Disabled)")    
-print("   ❌ Advanced AI Features (Disabled)")    
-
-print("\n🌐 Server Information:")    
-port = int(os.environ.get('PORT', 5000))    
-print(f"   Local: http://127.0.0.1:{port}")    
-print(f"   Network: http://0.0.0.0:{port}")    
-
-print("\n📱 Available Pages:")    
-print("   / - Landing page")    
-print("   /register - Sign up")    
-print("   /login - Login")    
-print("   /feed - Main feed")    
-print("   /explore - Discover")    
-print("   /messages - Direct messages")    
-print("   /profile/<username> - User profile")    
-print("   /settings - Account settings")    
-
-print("\n🔧 API Endpoints: /api/*")    
-print("="*50 + "\n")   
+if __name__ == "__main__":
+    with app.app_context():
+        socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
