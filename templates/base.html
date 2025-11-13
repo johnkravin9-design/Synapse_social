@@ -299,31 +299,71 @@
     
     <!-- Scripts -->
     <script>
-        // Global Configuration
-        const API_URL = 'http://localhost:5000';
-        const socket = io(API_URL);
+        // Global Configuration - FIXED FOR PRODUCTION
+        const API_URL = window.location.origin; // Use current domain for production
+        let socket = null;
+        
+        // Initialize Socket.IO only if user is logged in
+        function initializeSocket() {
+            const token = getToken();
+            if (token) {
+                socket = io(API_URL, {
+                    auth: {
+                        token: token
+                    }
+                });
+                
+                socket.on('connect', () => {
+                    console.log('Connected to server');
+                    const currentUser = getCurrentUser();
+                    if (currentUser && currentUser.id) {
+                        socket.emit('user_online', { user_id: currentUser.id });
+                    }
+                });
+                
+                socket.on('new_post', (data) => {
+                    showToast(`${data.user.name} posted something new!`, 'info');
+                });
+                
+                socket.on('new_notification', (data) => {
+                    loadNotificationCounts();
+                    showToast(data.content, 'info');
+                });
+                
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                });
+            }
+        }
         
         // Get current user
-        let currentUser = JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        function getCurrentUser() {
+            return JSON.parse(localStorage.getItem('synapse_user') || '{}');
+        }
         
         // Update navigation with user info
-        if (currentUser.username) {
-            document.getElementById('nav-avatar').textContent = currentUser.avatar || '🚀';
-            document.getElementById('nav-username').textContent = currentUser.username;
-            document.getElementById('nav-points').textContent = currentUser.points || 0;
-            document.getElementById('mobile-avatar').textContent = currentUser.avatar || '🚀';
+        function updateNavigation() {
+            const currentUser = getCurrentUser();
+            if (currentUser.username) {
+                document.getElementById('nav-avatar').textContent = currentUser.avatar || '🚀';
+                document.getElementById('nav-username').textContent = currentUser.username;
+                document.getElementById('nav-points').textContent = currentUser.points || 0;
+                document.getElementById('mobile-avatar').textContent = currentUser.avatar || '🚀';
+            }
         }
         
         // Highlight active page
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('.nav-item').forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && currentPath.startsWith(href) && href !== '/') {
-                link.classList.add('active');
-                link.classList.add('text-pink-500');
-                link.classList.remove('text-gray-300');
-            }
-        });
+        function highlightActivePage() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-item').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && currentPath.startsWith(href) && href !== '/') {
+                    link.classList.add('active');
+                    link.classList.add('text-pink-500');
+                    link.classList.remove('text-gray-300');
+                }
+            });
+        }
         
         // Get auth token
         function getToken() {
@@ -339,8 +379,8 @@
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
             const menu = document.getElementById('user-menu');
-            const button = event.target.closest('button');
-            if (!menu.contains(e.target) && button?.onclick !== toggleUserMenu) {
+            const button = e.target.closest('button');
+            if (menu && !menu.contains(e.target) && button?.onclick !== toggleUserMenu) {
                 menu.classList.add('hidden');
             }
         });
@@ -374,24 +414,36 @@
                     <span>${message}</span>
                 </div>
             `;
-            document.getElementById('toast-container').appendChild(toast);
             
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
+            const container = document.getElementById('toast-container');
+            if (container) {
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 3000);
+            }
         }
         
         // Show loading
         function showLoading() {
-            document.getElementById('loading-overlay').classList.remove('hidden');
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
         }
         
         // Hide loading
         function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
         }
         
-        // API Request Helper
+        // API Request Helper - FIXED VERSION
         async function apiRequest(endpoint, method = 'GET', data = null) {
             showLoading();
             try {
@@ -399,7 +451,9 @@
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
                 };
                 
                 const token = getToken();
@@ -407,23 +461,33 @@
                     options.headers['Authorization'] = `Bearer ${token}`;
                 }
                 
-                if (data) {
+                if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
                     options.body = JSON.stringify(data);
                 }
                 
-                const response = await fetch(`${API_URL}${endpoint}`, options);
-                const result = await response.json();
-                
-                hideLoading();
+                // Use relative URLs for production
+                const url = endpoint.startsWith('http') ? endpoint : endpoint;
+                const response = await fetch(url, options);
                 
                 if (!response.ok) {
-                    throw new Error(result.error || 'Request failed');
+                    let errorMessage = 'Request failed';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorData.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMessage);
                 }
                 
+                const result = await response.json();
+                hideLoading();
                 return result;
+                
             } catch (error) {
                 hideLoading();
-                showToast(error.message, 'error');
+                console.error('API Request Error:', error);
+                showToast(error.message || 'Connection failed. Please try again.', 'error');
                 throw error;
             }
         }
@@ -432,13 +496,21 @@
         async function loadNotificationCounts() {
             try {
                 const notifications = await apiRequest('/api/notifications');
-                const unreadCount = notifications.notifications.filter(n => !n.is_read).length;
+                const unreadCount = notifications.notifications ? 
+                    notifications.notifications.filter(n => !n.is_read).length : 0;
                 
                 if (unreadCount > 0) {
-                    document.getElementById('notification-badge').textContent = unreadCount;
-                    document.getElementById('notification-badge').style.display = 'block';
-                    document.getElementById('mobile-notification-badge').textContent = unreadCount;
-                    document.getElementById('mobile-notification-badge').style.display = 'block';
+                    const desktopBadge = document.getElementById('notification-badge');
+                    const mobileBadge = document.getElementById('mobile-notification-badge');
+                    
+                    if (desktopBadge) {
+                        desktopBadge.textContent = unreadCount;
+                        desktopBadge.style.display = 'block';
+                    }
+                    if (mobileBadge) {
+                        mobileBadge.textContent = unreadCount;
+                        mobileBadge.style.display = 'block';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading notification counts:', error);
@@ -448,37 +520,44 @@
         // Logout function
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
+                if (socket) {
+                    socket.disconnect();
+                }
                 localStorage.removeItem('synapse_token');
                 localStorage.removeItem('synapse_user');
                 window.location.href = '/login';
             }
         }
         
-        // Socket.IO Events
-        socket.on('connect', () => {
-            console.log('Connected to server');
-            if (currentUser.id) {
-                socket.emit('user_online', { user_id: currentUser.id });
+        // Check authentication on page load
+        function checkAuth() {
+            const token = getToken();
+            const currentPath = window.location.pathname;
+            const authPages = ['/login', '/register'];
+            
+            if (!token && !authPages.includes(currentPath)) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            if (token && authPages.includes(currentPath)) {
+                window.location.href = '/feed';
+                return;
+            }
+        }
+        
+        // Initialize app when DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavigation();
+            highlightActivePage();
+            checkAuth();
+            initializeSocket();
+            
+            // Load counts if user is logged in
+            if (getToken()) {
+                loadNotificationCounts();
             }
         });
-        
-        socket.on('new_post', (data) => {
-            showToast(`${data.user.name} posted something new!`, 'info');
-        });
-        
-        socket.on('new_story', (data) => {
-            showToast(`${data.user} posted a new story!`, 'info');
-        });
-        
-        socket.on('new_notification', (data) => {
-            loadNotificationCounts();
-            showToast(data.content, 'info');
-        });
-        
-        // Load counts on page load
-        if (getToken()) {
-            loadNotificationCounts();
-        }
     </script>
     
     {% block extra_js %}{% endblock %}

@@ -10,25 +10,25 @@
             <h2 class="text-3xl font-bold">Welcome Back!</h2>
             <p class="text-gray-300 mt-2">Login to continue your journey</p>
         </div>
-        
+
         <form id="login-form" class="space-y-6">
             <div>
                 <label class="block text-sm font-medium mb-2">Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
+                <input
+                    type="email"
+                    id="email"
                     required
                     class="w-full bg-white bg-opacity-10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
                     placeholder="your@email.com"
                 >
             </div>
-            
+
             <div>
                 <label class="block text-sm font-medium mb-2">Password</label>
                 <div class="relative">
-                    <input 
-                        type="password" 
-                        id="password" 
+                    <input
+                        type="password"
+                        id="password"
                         required
                         class="w-full bg-white bg-opacity-10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500"
                         placeholder="••••••••"
@@ -38,15 +38,15 @@
                     </button>
                 </div>
             </div>
-            
-            <button 
+
+            <button
                 type="submit"
                 class="w-full bg-gradient-to-r from-pink-500 to-purple-500 py-3 rounded-lg font-bold hover:from-pink-600 hover:to-purple-600 transition"
             >
                 Login
             </button>
         </form>
-        
+
         <div class="relative my-6">
             <div class="absolute inset-0 flex items-center">
                 <div class="w-full border-t border-gray-600"></div>
@@ -55,82 +55,154 @@
                 <span class="px-2 bg-transparent">Or continue with</span>
             </div>
         </div>
-        
+
         <!-- Google Login -->
-        <button 
+        <button
             onclick="loginWithGoogle()"
             class="w-full bg-white text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-100 transition flex items-center justify-center space-x-2"
         >
             <i class="fab fa-google text-red-500"></i>
             <span>Continue with Google</span>
         </button>
-        
+
         <p class="text-center mt-6 text-gray-300">
-            Don't have an account? 
+            Don't have an account?
             <a href="/register" class="text-pink-400 hover:text-pink-300 font-bold">Sign Up</a>
         </p>
     </div>
 </div>
 
 <script>
+    // Password visibility toggle
     function togglePassword() {
         const input = document.getElementById('password');
-        input.type = input.type === 'password' ? 'text' : 'password';
+        const icon = input.parentElement.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
     }
-    
+
+    // API request function
+    async function apiRequest(url, method = 'GET', data = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            'Accept': 'application/json'
+            },
+            credentials: 'include'
+        };
+
+        if (data && (method === 'POST' || method === 'PUT')) {
+            options.body = JSON.stringify(data);
+        }
+
+        try {
+            const response = await fetch(url, options);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('API request failed:', error);
+            showToast(error.message || 'Connection failed. Please try again.', 'error');
+            throw error;
+        }
+    }
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast-message');
+        existingToasts.forEach(toast => toast.remove());
+
+        const toast = document.createElement('div');
+        toast.className = `toast-message fixed top-4 right-4 p-4 rounded-lg z-50 text-white font-semibold ${
+            type === 'success' ? 'bg-green-500' :
+            type === 'error' ? 'bg-red-500' :
+            'bg-blue-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 4000);
+    }
+
+    // Login form handler
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
         
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
+        submitBtn.disabled = true;
+
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        
+
         try {
             const result = await apiRequest('/api/auth/login', 'POST', {
-                email,
-                password
+                email: email,
+                password: password
             });
-            
-            localStorage.setItem('synapse_token', result.token);
-            localStorage.setItem('synapse_user', JSON.stringify(result.user));
-            
-            showToast('Login successful!', 'success');
-            setTimeout(() => {
-                window.location.href = '/feed';
-            }, 1000);
+
+            if (result.token && result.user) {
+                localStorage.setItem('synapse_token', result.token);
+                localStorage.setItem('synapse_user', JSON.stringify(result.user));
+                
+                showToast('Login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/feed';
+                }, 1500);
+            } else {
+                throw new Error('Invalid response from server');
+            }
         } catch (error) {
             console.error('Login error:', error);
+            // Error message is already shown by apiRequest
+        } finally {
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         }
     });
-    
+
+    // Google login handler
     async function loginWithGoogle() {
-        // Initialize Google Sign-In
-        google.accounts.id.initialize({
-            client_id: 'YOUR_GOOGLE_CLIENT_ID',
-            callback: handleGoogleResponse
-        });
-        
-        google.accounts.id.prompt();
-    }
-    
-    async function handleGoogleResponse(response) {
+        showToast('Google login is currently disabled', 'info');
+        // Temporary disabled - you can enable later when Google auth is set up
+        /*
         try {
-            const result = await apiRequest('/api/auth/google', 'POST', {
-                token: response.credential
-            });
-            
-            localStorage.setItem('synapse_token', result.token);
-            localStorage.setItem('synapse_user', JSON.stringify(result.user));
-            
-            showToast('Google login successful!', 'success');
-            setTimeout(() => {
-                window.location.href = '/feed';
-            }, 1000);
+            // This would be your Google auth implementation
+            const result = await apiRequest('/api/auth/google', 'POST');
+            // Handle Google auth response
         } catch (error) {
             console.error('Google login error:', error);
         }
+        */
     }
+
+    // Check if user is already logged in
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('synapse_token');
+        if (token) {
+            // User is already logged in, redirect to feed
+            window.location.href = '/feed';
+        }
+    });
 </script>
 
-<!-- Google Sign-In Script -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Google Sign-In Script (commented out until configured) -->
+<!-- <script src="https://accounts.google.com/gsi/client" async defer></script> -->
 {% endblock %}
