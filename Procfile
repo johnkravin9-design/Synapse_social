@@ -1,1 +1,1 @@
-web: gunicorn --bind 0.0.0.0: --worker-class eventlet -w 1 app:socketio.app
+web: python app.py
