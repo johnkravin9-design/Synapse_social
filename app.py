@@ -4383,9 +4383,9 @@ print("\n" + "="*50)
 print("🚀 SYNAPSE SOCIAL PLATFORM")    
 print("="*50)    
 
-print("\n📧 Email Configuration:")    
-print(f"   Email: {app.config.get('MAIL_USERNAME', 'Not configured')}")    
-print(f"   Status: {'✅ Configured' if app.config.get('MAIL_PASSWORD') else '❌ Not>    
+print("\n📧 Email Configuration:")
+print(f"   Email: {app.config.get('MAIL_USERNAME', 'Not configured')}")
+print(f"   Status: {'✅ Configured' if app.config.get('MAIL_PASSWORD') else '❌ Not Configured'}")
 
 print("\n🛠️  Features Status:")    
 print("   ✅ Basic Authentication")    
