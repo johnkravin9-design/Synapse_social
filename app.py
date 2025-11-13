@@ -47,7 +47,13 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')  # set this in
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+#socketio = SocketIO(app, cors_allowed_origins="*")
+
+#socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+#socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+
+#socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Initialize Mail only when credentials present
 mail = None

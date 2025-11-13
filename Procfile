@@ -1,2 +1,1 @@
-# Procfile should contain:
-web: python app.py
+web: gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:$PORT app:socketio.app
